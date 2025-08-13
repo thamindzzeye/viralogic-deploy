@@ -1,0 +1,19 @@
+# Cloudflare Tunnel Configuration for Viralogic
+# Replace the tunnel token with your actual tunnel token from Cloudflare dashboard
+
+tunnel: your-tunnel-id-here
+credentials-file: /path/to/your/tunnel-credentials.json
+
+ingress:
+  # Main application
+  - hostname: viralogic.yourdomain.com
+    service: http://localhost:3000
+  - hostname: viralogic-api.yourdomain.com
+    service: http://localhost:8000
+  
+  # RSS service (if deployed separately)
+  - hostname: rss.yourdomain.com
+    service: http://localhost:8080
+  
+  # Catch-all rule (must be last)
+  - service: http_status:404
