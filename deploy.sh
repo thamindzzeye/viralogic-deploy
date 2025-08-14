@@ -123,6 +123,14 @@ setup_server() {
     fi
     
     print_success "Server setup completed"
+    
+    # Setup environment file
+    print_status "Setting up environment file..."
+    if [[ -f "$SCRIPTS_DIR/setup-env.sh" ]]; then
+        "$SCRIPTS_DIR/setup-env.sh"
+    else
+        print_warning "Environment setup script not found"
+    fi
 }
 
 # Function to setup Cloudflare Tunnel
