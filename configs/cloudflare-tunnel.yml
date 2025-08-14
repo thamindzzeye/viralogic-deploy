@@ -2,7 +2,7 @@
 # Replace the tunnel token with your actual tunnel token from Cloudflare dashboard
 
 tunnel: your-tunnel-id-here
-credentials-file: /path/to/your/tunnel-credentials.json
+credentials-file: /etc/cloudflared/tunnel-credentials.json
 
 ingress:
   # Main application
