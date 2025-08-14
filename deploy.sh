@@ -126,8 +126,7 @@ setup_server() {
 }
 
 # Function to setup Cloudflare Tunnel
-setup_cloudflare_tunnel
-            setup_dynamic_dns() {
+setup_cloudflare_tunnel() {
     print_status "Setting up Cloudflare Tunnel..."
     
     if [[ ! -f "$CONFIGS_DIR/cloudflare-tunnel.yml" ]]; then
@@ -148,42 +147,6 @@ setup_cloudflare_tunnel
     print_success "Cloudflare tunnel setup completed"
 }
 
-
-# Function to setup Dynamic DNS
-setup_dynamic_dns() {
-    print_status "Setting up Dynamic DNS..."
-    
-    if [[ ! -f "$SCRIPTS_DIR/cloudflare-ddns.sh" ]]; then
-        print_error "Dynamic DNS script not found: $SCRIPTS_DIR/cloudflare-ddns.sh"
-        print_status "Please ensure the script is available"
-        exit 1
-    fi
-    
-    # Check if API token is set
-    if [[ -z "$CLOUDFLARE_API_TOKEN" ]]; then
-        print_warning "CLOUDFLARE_API_TOKEN not set, skipping Dynamic DNS setup"
-        print_status "To enable Dynamic DNS, set CLOUDFLARE_API_TOKEN environment variable"
-        return
-    fi
-    
-    # Test Dynamic DNS script
-    print_status "Testing Dynamic DNS script..."
-    if "$SCRIPTS_DIR/cloudflare-ddns.sh"; then
-        print_success "Dynamic DNS setup completed"
-        
-        # Set up cron job if not already set
-        if ! crontab -l 2>/dev/null | grep -q "cloudflare-ddns.sh"; then
-            print_status "Setting up automatic Dynamic DNS updates..."
-            (crontab -l 2>/dev/null; echo "*/5 * * * * $SCRIPTS_DIR/cloudflare-ddns.sh") | crontab -
-            print_success "Cron job added for automatic updates every 5 minutes"
-        else
-            print_status "Dynamic DNS cron job already exists"
-        fi
-    else
-        print_error "Dynamic DNS setup failed"
-        exit 1
-    fi
-}
 # Function to deploy main application
 deploy_main_app() {
     print_status "Deploying main Viralogic application..."
@@ -401,7 +364,6 @@ main() {
     case "$ACTION" in
         "deploy")
             setup_cloudflare_tunnel
-            setup_dynamic_dns
             deploy_main_app
             deploy_rss_service
             check_status
@@ -427,10 +389,6 @@ main() {
             backup_database
             ;;
         "monitor")
-    echo "  ddns          Setup Dynamic DNS (Cloudflare)"
-        "ddns")
-            setup_dynamic_dns
-            ;;
             monitor_health
             ;;
         "setup")
