@@ -32,6 +32,8 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+
+
 # Default values
 IMAGE_TAG=${1:-main}
 GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-thamindzzeye/viralogic}
@@ -82,17 +84,55 @@ fi
 
 print_success "All required files found"
 
+# Authenticate with GitHub Container Registry
+print_status "Starting GitHub authentication..."
+
+# Prompt for GitHub token
+echo ""
+echo -e "${BLUE}[INFO]${NC} ==========================================="
+echo -e "${BLUE}[INFO]${NC} GITHUB AUTHENTICATION REQUIRED"
+echo -e "${BLUE}[INFO]${NC} ==========================================="
+echo -e "${BLUE}[INFO]${NC} Please enter your GitHub Personal Access Token below:"
+echo -e "${YELLOW}[NOTE]${NC} The token will not be displayed as you type for security"
+echo -e "${BLUE}[INFO]${NC} Token: "
+read -s GITHUB_TOKEN
+echo  # Add newline after hidden input
+
+# Prompt for GitHub username
+echo ""
+echo -e "${BLUE}[INFO]${NC} Please enter your GitHub username:"
+echo -e "${BLUE}[INFO]${NC} Username: "
+read GITHUB_USERNAME
+
+# Authenticate
+print_status "Authenticating with GitHub Container Registry..."
+if echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USERNAME" --password-stdin; then
+    print_success "Successfully authenticated with GitHub Container Registry"
+else
+    print_error "Failed to authenticate with GitHub Container Registry"
+    exit 1
+fi
+
 # Pull latest Docker images
 print_status "Pulling latest Docker images..."
 
 print_status "Pulling backend image..."
-docker pull ghcr.io/$GITHUB_REPOSITORY/backend:$IMAGE_TAG
+if ! docker pull ghcr.io/$GITHUB_REPOSITORY/backend:$IMAGE_TAG; then
+    print_error "Failed to pull backend image"
+    exit 1
+fi
 
 print_status "Pulling frontend image..."
-docker pull ghcr.io/$GITHUB_REPOSITORY/frontend:$IMAGE_TAG
+if ! docker pull ghcr.io/$GITHUB_REPOSITORY/frontend:$IMAGE_TAG; then
+    print_error "Failed to pull frontend image"
+    exit 1
+fi
 
 print_status "Pulling RSS service image..."
-docker pull ghcr.io/$GITHUB_REPOSITORY/rss-service:$IMAGE_TAG
+if ! docker pull ghcr.io/$GITHUB_REPOSITORY/rss-service:$IMAGE_TAG; then
+    print_error "Failed to pull RSS service image"
+    exit 1
+fi
 
 print_success "All images pulled successfully"
 
