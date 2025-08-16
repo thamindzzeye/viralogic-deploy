@@ -1,122 +1,139 @@
-# Viralogic Deployment Repository
+# Viralogic Production Deployment
 
-Simple, production-ready deployment for the Viralogic platform.
+This repository contains the production deployment configuration for the Viralogic platform.
 
-## 🚀 Quick Start
-
-```bash
-# Clone this repository on your production server
-git clone https://github.com/your-username/viralogic-deploy.git
-cd viralogic-deploy
-
-# Set up your environment
-cp configs/env.production.example configs/.env.production
-# Edit configs/.env.production with your actual values
-
-# Deploy everything
-./deploy.sh production deploy
-```
-
-## 📁 Repository Structure
-
-```
-viralogic-deploy/
-├── deploy.sh                 # Main deployment script
-├── scripts/
-│   ├── setup.sh             # Server setup (Docker, etc.)
-│   ├── monitor.sh           # Health monitoring
-│   └── backup.sh            # Database backups
-├── configs/
-│   ├── .env.production      # Production environment variables
-│   ├── env.production.example
-│   └── cloudflare-tunnel.yml
-└── templates/
-    ├── docker-compose.production.yml
-    └── docker-compose.rss-service.yml
-```
-
-## 🛠️ Commands
+## Quick Deploy
 
 ```bash
-# Deploy to production
-./deploy.sh production deploy
+# Deploy with latest images
+./deploy.sh
+
+# Deploy with specific image tag
+./deploy.sh main
+```
+
+## Prerequisites
+
+1. **Docker & Docker Compose** installed on your server
+2. **Cloudflare Tunnel credentials** in JSON format
+3. **GitHub Container Registry access** (images are built by GitHub Actions)
+
+## Setup
+
+### 1. Create Cloudflare Tunnels
+
+Create two tunnels in your Cloudflare Zero Trust Dashboard:
+- `viralogic-production` - for main application
+- `viralogic-rss-production` - for RSS service
+
+Download the JSON credentials for each tunnel.
+
+### 2. Add Tunnel Credentials
+
+Create the tunnel JSON files in the `cloudflared/` directory:
+
+```bash
+# Main app tunnel
+echo 'YOUR_MAIN_TUNNEL_JSON_CONTENT' > cloudflared/viralogic-production-tunnel.json
+
+# RSS service tunnel  
+echo 'YOUR_RSS_TUNNEL_JSON_CONTENT' > cloudflared/viralogic-rss-production-tunnel.json
+```
+
+### 3. Verify Files
+
+Ensure you have these files:
+- `docker-compose-main.yml` - Main application services
+- `docker-compose-rss.yml` - RSS service
+- `cloudflared/config.yml` - Main tunnel configuration
+- `cloudflared/rss-config.yml` - RSS tunnel configuration
+- `cloudflared/viralogic-production-tunnel.json` - Main tunnel credentials
+- `cloudflared/viralogic-rss-production-tunnel.json` - RSS tunnel credentials
+
+## Deployment Process
+
+The deployment script will:
+
+1. ✅ Check prerequisites (Docker, required files)
+2. ✅ Pull latest Docker images from GitHub Container Registry
+3. ✅ Deploy main application (`docker-compose-main.yml`)
+4. ✅ Deploy RSS service (`docker-compose-rss.yml`)
+5. ✅ Run health checks
+6. ✅ Display service status
+
+## Services
+
+### Main Application (Port 1720-1721)
+- **Backend**: `ghcr.io/thamindzzeye/viralogic/backend:main`
+- **Frontend**: `ghcr.io/thamindzzeye/viralogic/frontend:main`
+- **PostgreSQL**: Port 1723
+- **Redis**: Port 1724
+- **Celery Worker & Beat**: Background tasks
+
+### RSS Service (Port 1722)
+- **RSS Service**: `ghcr.io/thamindzzeye/viralogic/rss-service:main`
+
+### Cloudflare Tunnels
+- **Main App**: `viralogic-production` → `viralogic.tbdv.org` & `viralogic-api.tbdv.org`
+- **RSS Service**: `viralogic-rss-production` → `rss.viralogic.io`
+
+## Monitoring
+
+```bash
+# View logs
+docker-compose -f docker-compose-main.yml logs -f
+docker-compose -f docker-compose-rss.yml logs -f
 
 # Check status
-./deploy.sh production status
+docker-compose -f docker-compose-main.yml ps
+docker-compose -f docker-compose-rss.yml ps
 
-# View logs
-./deploy.sh production logs
-
-# Update application
-./deploy.sh production update
-
-# Stop services
-./deploy.sh production stop
-
-# Restart services
-./deploy.sh production restart
-
-# Backup database
-./deploy.sh production backup
-
-# Monitor health
-./deploy.sh production monitor
+# Health checks
+curl http://localhost:1720/health  # Backend
+curl http://localhost:1721         # Frontend
+curl http://localhost:1722/health/public  # RSS Service
 ```
 
-## 🔧 Prerequisites
+## Troubleshooting
 
-- Docker & Docker Compose
-- Git
-- Cloudflare account (for tunnel)
-- GitHub Container Registry access
-
-## 📋 Setup Steps
-
-1. **Server Setup**: Run `./scripts/setup.sh` to install dependencies
-2. **Environment**: Configure `configs/.env.production`
-3. **Cloudflare**: Set up tunnel configuration
-4. **Deploy**: Run `./deploy.sh production deploy`
-
-## 🔒 Security
-
-- All secrets stored in `.env.production` (not committed to git)
-- Cloudflare Tunnel for secure access
-- Environment-specific configurations
-- No hardcoded credentials in compose files
-
-## 📊 Monitoring
-
-- Health checks on all services
-- Log aggregation
-- Basic metrics collection
-- Automated backups
-
-## 🆘 Troubleshooting
-
+### Missing Tunnel Credentials
 ```bash
-# Check service status
-docker-compose -f configs/docker-compose.production.yml ps
+# Check if tunnel files exist
+ls -la cloudflared/*.json
 
-# View specific service logs
-docker-compose -f configs/docker-compose.production.yml logs backend
-
-# Restart specific service
-docker-compose -f configs/docker-compose.production.yml restart backend
+# Create from GitHub secrets (if you have access)
+echo '$GITHUB_SECRET_CONTENT' > cloudflared/viralogic-production-tunnel.json
 ```
 
-## 🔄 Updates
-
+### Image Pull Issues
 ```bash
-# Update to latest version
-./deploy.sh production update
+# Check if you can access GitHub Container Registry
+docker pull ghcr.io/thamindzzeye/viralogic/backend:main
 
-# Rollback if needed
-./deploy.sh production rollback
+# Verify image exists
+docker images | grep viralogic
 ```
 
-## 📞 Support
+### Port Conflicts
+All services use standardized ports:
+- Backend: 1720
+- Frontend: 1721  
+- RSS Service: 1722
+- PostgreSQL: 1723
+- Redis: 1724
 
-For issues or questions:
-1. Check the logs: `./deploy.sh production logs`
-2. Review the main Viralogic repository documentation
-3. Check Cloudflare tunnel status
+## Build Process
+
+Images are built automatically by GitHub Actions when you push to the `main` branch:
+1. Code is built into Docker images
+2. Images are pushed to `ghcr.io/thamindzzeye/viralogic/`
+3. You manually deploy using this script
+
+## Security
+
+- All environment variables are baked into Docker images during build
+- No `.env` files needed on production server
+- Cloudflare tunnels provide secure external access
+- All secrets managed via GitHub Secrets
+- **Cloudflare tunnel JSON files are excluded from git** (see `.gitignore`)
+- **Never commit sensitive credentials to version control**

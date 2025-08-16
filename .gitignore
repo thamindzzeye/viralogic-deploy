@@ -1,0 +1,43 @@
+# Cloudflare Tunnel Credentials (SENSITIVE - NEVER COMMIT)
+cloudflared/*.json
+cloudflared/viralogic-production-tunnel.json
+cloudflared/viralogic-rss-production-tunnel.json
+
+# Environment files (if any are created)
+.env*
+*.env
+
+# Logs
+*.log
+logs/
+
+# Docker volumes and data
+docker_volumes/
+data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backup files
+*.backup
+*.bak
+
+# Secrets and credentials
+secrets/
+credentials/
+*.pem
+*.key
+*.crt
+*.p12
