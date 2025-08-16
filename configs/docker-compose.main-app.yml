@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    env_file:
+      - .env.production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U viralogic_user -d viralogic"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching and message broker
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    env_file:
+      - .env.production
+    volumes:
+      - redis_data:/data
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend API
+  backend:
+    image: ghcr.io/${GITHUB_REPOSITORY:-thamindzzeye/Viralogic}/backend:${IMAGE_TAG:-latest}
+    env_file:
+      - .env.production
+    ports:
+      - "1720:8000"  # External:Internal
+    volumes:
+      - viralogic_logs:/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend
+  frontend:
+    image: ghcr.io/${GITHUB_REPOSITORY:-thamindzzeye/Viralogic}/frontend:${IMAGE_TAG:-latest}
+    env_file:
+      - .env.production
+    ports:
+      - "1721:3000"  # External:Internal
+    depends_on:
+      - backend
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Cloudflare Tunnel
+  cloudflare-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflare-tunnel
+    restart: unless-stopped
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflare-tunnel.yml:/etc/cloudflared/config.yml:ro
+      - ./tunnel-credentials.json:/etc/cloudflared/tunnel-credentials.json:ro
+    network_mode: host  # Required for localhost access to services
+    depends_on:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  viralogic-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  viralogic_logs:

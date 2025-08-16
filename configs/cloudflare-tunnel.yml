@@ -6,14 +6,14 @@ credentials-file: /etc/cloudflared/tunnel-credentials.json
 
 ingress:
   # Main application
-  - hostname: viralogic.yourdomain.com
-    service: http://localhost:3000
-  - hostname: viralogic-api.yourdomain.com
-    service: http://localhost:8000
+  - hostname: viralogic.io
+    service: http://localhost:1721
+  - hostname: api.viralogic.io
+    service: http://localhost:1720
   
-  # RSS service (if deployed separately)
-  - hostname: rss.yourdomain.com
-    service: http://localhost:8080
+  # RSS service
+  - hostname: rss.viralogic.io
+    service: http://localhost:1722
   
   # Catch-all rule (must be last)
   - service: http_status:404

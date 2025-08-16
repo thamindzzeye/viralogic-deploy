@@ -1,31 +1,8 @@
 version: '3.8'
 
 services:
-  # RSS Service API
-  app:
-    image: ghcr.io/${GITHUB_REPOSITORY:-your-username/viralogic}/rss-service:${IMAGE_TAG:-latest}
-    env_file:
-      - .env.production
-    ports:
-      - "8001:8000"
-    volumes:
-      - rss_logs:/logs
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - rss-service-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # PostgreSQL Database (RSS Service specific)
-  postgres:
+  # PostgreSQL Database for RSS Service
+  rss-postgres:
     image: postgres:15-alpine
     env_file:
       - .env.production
@@ -33,7 +10,7 @@ services:
       - rss_postgres_data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     ports:
-      - "5433:5432"
+      - "5433:5432"  # Different port to avoid conflicts
     networks:
       - rss-service-network
     restart: unless-stopped
@@ -44,7 +21,7 @@ services:
       retries: 3
 
   # Redis for RSS Service
-  redis:
+  rss-redis:
     image: redis:7-alpine
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     env_file:
@@ -52,7 +29,7 @@ services:
     volumes:
       - rss_redis_data:/data
     ports:
-      - "6380:6379"
+      - "6380:6379"  # Different port to avoid conflicts
     networks:
       - rss-service-network
     restart: unless-stopped
@@ -62,26 +39,49 @@ services:
       timeout: 10s
       retries: 3
 
+  # RSS Service API
+  rss-service:
+    image: ghcr.io/${GITHUB_REPOSITORY:-thamindzzeye/Viralogic}/rss-service:${IMAGE_TAG:-latest}
+    env_file:
+      - .env.production
+    ports:
+      - "1722:8000"  # External:Internal
+    volumes:
+      - rss_logs:/logs
+    depends_on:
+      rss-postgres:
+        condition: service_healthy
+      rss-redis:
+        condition: service_healthy
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/public"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Celery Worker for RSS Service
-  celery-worker:
-    image: ghcr.io/${GITHUB_REPOSITORY:-your-username/viralogic}/rss-service:${IMAGE_TAG:-latest}
+  rss-celery-worker:
+    image: ghcr.io/${GITHUB_REPOSITORY:-thamindzzeye/Viralogic}/rss-service:${IMAGE_TAG:-latest}
     command: celery -A app.celery.celery_app worker --loglevel=info --concurrency=4
     env_file:
       - .env.production
     volumes:
       - rss_logs:/logs
     depends_on:
-      postgres:
+      rss-postgres:
         condition: service_healthy
-      redis:
+      rss-redis:
         condition: service_healthy
     networks:
       - rss-service-network
     restart: unless-stopped
 
   # Celery Beat for RSS Service
-  celery-beat:
-    image: ghcr.io/${GITHUB_REPOSITORY:-your-username/viralogic}/rss-service:${IMAGE_TAG:-latest}
+  rss-celery-beat:
+    image: ghcr.io/${GITHUB_REPOSITORY:-thamindzzeye/Viralogic}/rss-service:${IMAGE_TAG:-latest}
     command: celery -A app.celery.celery_app beat --loglevel=info
     env_file:
       - .env.production
@@ -89,42 +89,34 @@ services:
       - rss_logs:/logs
       - rss_celerybeat_data:/var/lib/celery
     depends_on:
-      postgres:
+      rss-postgres:
         condition: service_healthy
-      redis:
+      rss-redis:
         condition: service_healthy
     networks:
       - rss-service-network
     restart: unless-stopped
 
   # Flower for RSS Service monitoring
-  flower:
+  rss-flower:
     image: mher/flower:2.0.1
-    env_file:
-      - .env.production
     ports:
-      - "5556:5555"
+      - "5555:5555"
     volumes:
       - rss_flower_data:/data
     depends_on:
-      - redis
-      - celery-worker
+      - rss-redis
     networks:
       - rss-service-network
     restart: unless-stopped
 
-volumes:
-  rss_postgres_data:
-    driver: local
-  rss_redis_data:
-    driver: local
-  rss_logs:
-    driver: local
-  rss_celerybeat_data:
-    driver: local
-  rss_flower_data:
-    driver: local
-
 networks:
   rss-service-network:
     driver: bridge
+
+volumes:
+  rss_postgres_data:
+  rss_redis_data:
+  rss_logs:
+  rss_celerybeat_data:
+  rss_flower_data:
