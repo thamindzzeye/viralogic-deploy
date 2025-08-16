@@ -31,7 +31,7 @@ services:
 
   # Backend API
   backend:
-    image: ghcr.io/thamindzzeye/Viralogic/backend:main
+    image: ghcr.io/thamindzzeye/viralogic/backend:main
     environment:
       - ENVIRONMENT=production
       - DEBUG=false
@@ -84,7 +84,7 @@ services:
 
   # Frontend
   frontend:
-    image: ghcr.io/thamindzzeye/Viralogic/frontend:main
+    image: ghcr.io/thamindzzeye/viralogic/frontend:main
     environment:
       - NODE_ENV=production
       - BACKEND_URL=${BACKEND_URL:-https://viralogic-api.tbdv.org}
@@ -101,7 +101,7 @@ services:
 
   # Celery Worker
   celeryworker:
-    image: ghcr.io/thamindzzeye/Viralogic/backend:main
+    image: ghcr.io/thamindzzeye/viralogic/backend:main
     command: celery -A app.celery.celery_app worker --loglevel=info --concurrency=10 -Q celery,auto_post,file_processing,ai_content_generation
     environment:
       - ENVIRONMENT=production
@@ -152,7 +152,7 @@ services:
 
   # Celery Beat (Scheduler)
   celerybeat:
-    image: ghcr.io/thamindzzeye/Viralogic/backend:main
+    image: ghcr.io/thamindzzeye/viralogic/backend:main
     command: celery -A app.celery.celery_app beat --loglevel=info
     environment:
       - ENVIRONMENT=production
