@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # RSS Service
+  rss-service:
+    image: ghcr.io/thamindzzeye/Viralogic/rss-service:main
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - SECRET_KEY=${SECRET_KEY}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-viralogic}
+      - POSTGRES_USER=${POSTGRES_USER:-viralogic_user}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-viralogic_user}:${DB_PASSWORD}@postgres:1723/${POSTGRES_DB:-viralogic}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:1724/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:1724/0
+      - OPEN_ROUTER_API_KEY=${OPEN_ROUTER_API_KEY}
+      - RSS_SERVICE_API_KEY=${RSS_SERVICE_API_KEY}
+      - RSS_SERVICE_DEBUG=${RSS_SERVICE_DEBUG:-false}
+
+    ports:
+      - "1722:1722"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 1722
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+
+networks:
+  viralogic-network:
+    driver: bridge
