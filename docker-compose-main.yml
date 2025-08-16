@@ -201,6 +201,19 @@ services:
       - viralogic-network
     restart: unless-stopped
 
+  # Cloudflare Tunnel for Main App
+  cloudflared-main:
+    image: cloudflare/cloudflared:latest
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    command: tunnel --config /etc/cloudflared/config.yml run viralogic-production
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - viralogic-network
+
 volumes:
   postgres_data:
   redis_data:

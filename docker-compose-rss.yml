@@ -18,13 +18,24 @@ services:
       - OPEN_ROUTER_API_KEY=${OPEN_ROUTER_API_KEY}
       - RSS_SERVICE_API_KEY=${RSS_SERVICE_API_KEY}
       - RSS_SERVICE_DEBUG=${RSS_SERVICE_DEBUG:-false}
-
     ports:
       - "1722:1722"
     command: uvicorn app.main:app --host 0.0.0.0 --port 1722
     networks:
       - viralogic-network
     restart: unless-stopped
+
+  # Cloudflare Tunnel for RSS Service
+  cloudflared-rss:
+    image: cloudflare/cloudflared:latest
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    command: tunnel --config /etc/cloudflared/rss-config.yml run viralogic-rss-production
+    depends_on:
+      - rss-service
+    restart: unless-stopped
+    networks:
+      - viralogic-network
 
 networks:
   viralogic-network:

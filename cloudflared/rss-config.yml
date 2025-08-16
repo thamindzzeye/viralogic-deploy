@@ -1,0 +1,8 @@
+tunnel: viralogic-rss-production
+credentials-file: /etc/cloudflared/viralogic-rss-production-tunnel.json
+
+ingress:
+  - hostname: rss.viralogic.io
+    service: http://rss-service:1722
+
+  - service: http_status:404
