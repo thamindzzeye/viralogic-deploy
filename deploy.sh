@@ -82,6 +82,19 @@ if [[ ! -f "$SCRIPT_DIR/cloudflared/viralogic-rss-production-tunnel.json" ]]; th
     exit 1
 fi
 
+# Check for RSS service environment variables
+if [[ -z "$RSS_DB_PASSWORD" ]]; then
+    print_error "RSS_DB_PASSWORD environment variable is not set"
+    print_status "Please set: export RSS_DB_PASSWORD='your_rss_db_password'"
+    exit 1
+fi
+
+if [[ -z "$RSS_REDIS_PASSWORD" ]]; then
+    print_error "RSS_REDIS_PASSWORD environment variable is not set"
+    print_status "Please set: export RSS_REDIS_PASSWORD='your_rss_redis_password'"
+    exit 1
+fi
+
 print_success "All required files found"
 
 # Authenticate with GitHub Container Registry
@@ -178,6 +191,13 @@ if curl -f http://localhost:1722/health/public > /dev/null 2>&1; then
     print_success "RSS service health check passed"
 else
     print_warning "RSS service health check failed (port 1722)"
+fi
+
+# Check RSS Flower monitoring
+if curl -f http://localhost:1727 > /dev/null 2>&1; then
+    print_success "RSS Flower monitoring health check passed"
+else
+    print_warning "RSS Flower monitoring health check failed (port 1727)"
 fi
 
 # Show service status

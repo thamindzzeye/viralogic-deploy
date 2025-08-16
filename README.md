@@ -17,6 +17,7 @@ This repository contains the production deployment configuration for the Viralog
 1. **Docker & Docker Compose** installed on your server
 2. **Cloudflare Tunnel credentials** in JSON format
 3. **GitHub Container Registry access** (images are built by GitHub Actions)
+4. **Environment variables** for database and Redis passwords
 
 ## Setup
 
@@ -54,24 +55,44 @@ Ensure you have these files:
 
 The deployment script will:
 
-1. ✅ Check prerequisites (Docker, required files)
+1. ✅ Check prerequisites (Docker, required files, environment variables)
 2. ✅ Pull latest Docker images from GitHub Container Registry
 3. ✅ Deploy main application (`docker-compose-main.yml`)
 4. ✅ Deploy RSS service (`docker-compose-rss.yml`)
 5. ✅ Run health checks
 6. ✅ Display service status
 
+## Environment Variables
+
+### Main Application
+```bash
+export DB_PASSWORD="your_main_db_password"
+export REDIS_PASSWORD="your_main_redis_password"
+```
+
+### RSS Service
+```bash
+export RSS_DB_PASSWORD="your_rss_db_password"
+export RSS_REDIS_PASSWORD="your_rss_redis_password"
+```
+
 ## Services
 
-### Main Application (Port 1720-1721)
+### Main Application (Port 1720-1724)
 - **Backend**: `ghcr.io/thamindzzeye/viralogic/backend:main`
 - **Frontend**: `ghcr.io/thamindzzeye/viralogic/frontend:main`
 - **PostgreSQL**: Port 1723
 - **Redis**: Port 1724
 - **Celery Worker & Beat**: Background tasks
 
-### RSS Service (Port 1722)
+### RSS Service (Ports 1722-1727)
 - **RSS Service**: `ghcr.io/thamindzzeye/viralogic/rss-service:main`
+- **RSS PostgreSQL**: Port 1725
+- **RSS Redis**: Port 1726
+- **RSS Flower (Monitoring)**: Port 1727
+- **RSS Celery Worker & Beat**: Background tasks
+
+📋 **See [PORT_MAPPING.md](PORT_MAPPING.md) for detailed port configuration**
 
 ### Cloudflare Tunnels
 - **Main App**: `viralogic-production` → `viralogic.tbdv.org` & `viralogic-api.tbdv.org`
@@ -131,8 +152,9 @@ Images are built automatically by GitHub Actions when you push to the `main` bra
 
 ## Security
 
-- All environment variables are baked into Docker images during build
-- No `.env` files needed on production server
+- **All environment variables are baked into Docker images** during GitHub Actions build
+- **No `.env` files needed on production server** - secrets are embedded in images
+- **Only database and Redis passwords** need to be set on the server (for service communication)
 - Cloudflare tunnels provide secure external access
 - All secrets managed via GitHub Secrets
 - **Cloudflare tunnel JSON files are excluded from git** (see `.gitignore`)
