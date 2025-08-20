@@ -33,6 +33,8 @@ temp/
 # Backup files
 *.backup
 *.bak
+backups/
+*.sql
 
 # Secrets and credentials
 secrets/
