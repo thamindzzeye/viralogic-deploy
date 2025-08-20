@@ -54,24 +54,24 @@ print_success "Prerequisites check passed"
 # Check for required files
 print_status "Checking required files..."
 
-if [[ ! -d "images" ]]; then
-    print_error "images directory not found"
-    print_status "Please ensure you're running this script from the artifacts directory"
+if [[ ! -d "output/images" ]]; then
+    print_error "output/images directory not found"
+    print_status "Please ensure you have copied the output folder to this directory"
     exit 1
 fi
 
-if [[ ! -f "images/backend-$IMAGE_TAG.tar.gz" ]]; then
-    print_error "Backend image not found: images/backend-$IMAGE_TAG.tar.gz"
+if [[ ! -f "output/images/backend-$IMAGE_TAG.tar.gz" ]]; then
+    print_error "Backend image not found: output/images/backend-$IMAGE_TAG.tar.gz"
     exit 1
 fi
 
-if [[ ! -f "images/frontend-$IMAGE_TAG.tar.gz" ]]; then
-    print_error "Frontend image not found: images/frontend-$IMAGE_TAG.tar.gz"
+if [[ ! -f "output/images/frontend-$IMAGE_TAG.tar.gz" ]]; then
+    print_error "Frontend image not found: output/images/frontend-$IMAGE_TAG.tar.gz"
     exit 1
 fi
 
-if [[ ! -f "images/rss-service-$IMAGE_TAG.tar.gz" ]]; then
-    print_error "RSS service image not found: images/rss-service-$IMAGE_TAG.tar.gz"
+if [[ ! -f "output/images/rss-service-$IMAGE_TAG.tar.gz" ]]; then
+    print_error "RSS service image not found: output/images/rss-service-$IMAGE_TAG.tar.gz"
     exit 1
 fi
 
@@ -81,13 +81,13 @@ print_success "All required files found"
 print_status "Loading Docker images..."
 
 print_status "Loading backend image..."
-docker load < "images/backend-$IMAGE_TAG.tar.gz"
+docker load < "output/images/backend-$IMAGE_TAG.tar.gz"
 
 print_status "Loading frontend image..."
-docker load < "images/frontend-$IMAGE_TAG.tar.gz"
+docker load < "output/images/frontend-$IMAGE_TAG.tar.gz"
 
 print_status "Loading RSS service image..."
-docker load < "images/rss-service-$IMAGE_TAG.tar.gz"
+docker load < "output/images/rss-service-$IMAGE_TAG.tar.gz"
 
 print_success "All images loaded successfully!"
 
