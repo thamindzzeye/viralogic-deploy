@@ -1,0 +1,224 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    env_file:
+      - .env
+    command: postgres -p 1723
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "1723:1723"
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    env_file:
+      - .env
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --port 1724
+    volumes:
+      - redis_data:/data
+    ports:
+      - "1724:1724"
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+
+  # Backend API (Local Build)
+  backend:
+    build:
+      context: ../Viralogic/backend
+      dockerfile: Dockerfile
+      args:
+        SECRET_KEY: ${SECRET_KEY}
+        DB_PASSWORD: ${DB_PASSWORD}
+        POSTGRES_DB: viralogic
+        POSTGRES_USER: viralogic_user
+        REDIS_PASSWORD: ${REDIS_PASSWORD}
+        OPEN_ROUTER_API_KEY: ${OPEN_ROUTER_API_KEY}
+        MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+        MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+        MINIO_ENDPOINT: files.tbdv.org
+        MINIO_SECURE: true
+        MINIO_BUCKET_NAME: viralogic-files
+        LINKEDIN_CLIENT_ID: ${LINKEDIN_CLIENT_ID}
+        LINKEDIN_CLIENT_SECRET: ${LINKEDIN_CLIENT_SECRET}
+        YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID}
+        YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET}
+        FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID}
+        FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET}
+        THREADS_CLIENT_ID: ${THREADS_CLIENT_ID}
+        THREADS_CLIENT_SECRET: ${THREADS_CLIENT_SECRET}
+        X_CLIENT_ID: ${X_CLIENT_ID}
+        X_CLIENT_SECRET: ${X_CLIENT_SECRET}
+        X_OAUTH1_CLIENT_ID: ${X_OAUTH1_CLIENT_ID}
+        X_OAUTH1_CLIENT_SECRET: ${X_OAUTH1_CLIENT_SECRET}
+        TIKTOK_CLIENT_ID: ${TIKTOK_CLIENT_ID}
+        TIKTOK_CLIENT_SECRET: ${TIKTOK_CLIENT_SECRET}
+        RSS_SERVICE_API_KEY: ${RSS_SERVICE_API_KEY}
+        RSS_SERVICE_URL: https://rss.viralogic.io
+        RSS_SERVICE_TIMEOUT: 30
+        RSS_SERVICE_DEBUG: false
+        FRONTEND_URL: https://viralogic.io
+        BACKEND_URL: https://api.viralogic.io
+        COOKIE_SECURE: true
+        LOG_LEVEL: INFO
+        RATE_LIMIT_PER_MINUTE: 100
+        NODE_ENV: production
+    env_file:
+      - .env
+    ports:
+      - "1720:1720"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 1720
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+
+  # Frontend (Local Build)
+  frontend:
+    build:
+      context: ../Viralogic/frontend
+      dockerfile: Dockerfile
+      args:
+        BACKEND_URL: https://api.viralogic.io
+        FRONTEND_URL: https://viralogic.io
+        MINIO_ENDPOINT: files.tbdv.org
+    env_file:
+      - .env
+    ports:
+      - "1721:1721"
+    command: node server.js
+    depends_on:
+      - backend
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+
+  # Celery Worker (Local Build)
+  celeryworker:
+    build:
+      context: ../Viralogic/backend
+      dockerfile: Dockerfile
+      args:
+        SECRET_KEY: ${SECRET_KEY}
+        DB_PASSWORD: ${DB_PASSWORD}
+        POSTGRES_DB: viralogic
+        POSTGRES_USER: viralogic_user
+        REDIS_PASSWORD: ${REDIS_PASSWORD}
+        OPEN_ROUTER_API_KEY: ${OPEN_ROUTER_API_KEY}
+        MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+        MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+        MINIO_ENDPOINT: files.tbdv.org
+        MINIO_SECURE: true
+        MINIO_BUCKET_NAME: viralogic-files
+        LINKEDIN_CLIENT_ID: ${LINKEDIN_CLIENT_ID}
+        LINKEDIN_CLIENT_SECRET: ${LINKEDIN_CLIENT_SECRET}
+        YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID}
+        YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET}
+        FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID}
+        FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET}
+        THREADS_CLIENT_ID: ${THREADS_CLIENT_ID}
+        THREADS_CLIENT_SECRET: ${THREADS_CLIENT_SECRET}
+        X_CLIENT_ID: ${X_CLIENT_ID}
+        X_CLIENT_SECRET: ${X_CLIENT_SECRET}
+        X_OAUTH1_CLIENT_ID: ${X_OAUTH1_CLIENT_ID}
+        X_OAUTH1_CLIENT_SECRET: ${X_OAUTH1_CLIENT_SECRET}
+        TIKTOK_CLIENT_ID: ${TIKTOK_CLIENT_ID}
+        TIKTOK_CLIENT_SECRET: ${TIKTOK_CLIENT_SECRET}
+        RSS_SERVICE_API_KEY: ${RSS_SERVICE_API_KEY}
+        RSS_SERVICE_URL: https://rss.viralogic.io
+        RSS_SERVICE_TIMEOUT: 30
+        RSS_SERVICE_DEBUG: false
+        FRONTEND_URL: https://viralogic.io
+        BACKEND_URL: https://api.viralogic.io
+        COOKIE_SECURE: true
+        LOG_LEVEL: INFO
+        RATE_LIMIT_PER_MINUTE: 100
+        NODE_ENV: production
+    command: celery -A app.celery.celery_app worker --loglevel=info --concurrency=10 -Q celery,auto_post,file_processing,ai_content_generation
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+
+  # Celery Beat (Scheduler) (Local Build)
+  celerybeat:
+    build:
+      context: ../Viralogic/backend
+      dockerfile: Dockerfile
+      args:
+        SECRET_KEY: ${SECRET_KEY}
+        DB_PASSWORD: ${DB_PASSWORD}
+        POSTGRES_DB: viralogic
+        POSTGRES_USER: viralogic_user
+        REDIS_PASSWORD: ${REDIS_PASSWORD}
+        OPEN_ROUTER_API_KEY: ${OPEN_ROUTER_API_KEY}
+        MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+        MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+        MINIO_ENDPOINT: files.tbdv.org
+        MINIO_SECURE: true
+        MINIO_BUCKET_NAME: viralogic-files
+        LINKEDIN_CLIENT_ID: ${LINKEDIN_CLIENT_ID}
+        LINKEDIN_CLIENT_SECRET: ${LINKEDIN_CLIENT_SECRET}
+        YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID}
+        YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET}
+        FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID}
+        FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET}
+        THREADS_CLIENT_ID: ${THREADS_CLIENT_ID}
+        THREADS_CLIENT_SECRET: ${THREADS_CLIENT_SECRET}
+        X_CLIENT_ID: ${X_CLIENT_ID}
+        X_CLIENT_SECRET: ${X_CLIENT_SECRET}
+        X_OAUTH1_CLIENT_ID: ${X_OAUTH1_CLIENT_ID}
+        X_OAUTH1_CLIENT_SECRET: ${X_OAUTH1_CLIENT_SECRET}
+        TIKTOK_CLIENT_ID: ${TIKTOK_CLIENT_ID}
+        TIKTOK_CLIENT_SECRET: ${TIKTOK_CLIENT_SECRET}
+        RSS_SERVICE_API_KEY: ${RSS_SERVICE_API_KEY}
+        RSS_SERVICE_URL: https://rss.viralogic.io
+        RSS_SERVICE_TIMEOUT: 30
+        RSS_SERVICE_DEBUG: false
+        FRONTEND_URL: https://viralogic.io
+        BACKEND_URL: https://api.viralogic.io
+        COOKIE_SECURE: true
+        LOG_LEVEL: INFO
+        RATE_LIMIT_PER_MINUTE: 100
+        NODE_ENV: production
+    command: celery -A app.celery.celery_app beat --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+
+  # Cloudflare Tunnel for Main App
+  cloudflared-main:
+    image: cloudflare/cloudflared:latest
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    command: tunnel --config /etc/cloudflared/config.yml run viralogic-production
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - viralogic-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  viralogic-network:
+    driver: bridge

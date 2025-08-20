@@ -1,0 +1,140 @@
+services:
+  # RSS Service PostgreSQL Database
+  rss-postgres:
+    image: postgres:15-alpine
+    env_file:
+      - .env
+    command: postgres -p 1725
+    volumes:
+      - rss_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "1725:1725"
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+
+  # RSS Service Redis Cache
+  rss-redis:
+    image: redis:7-alpine
+    env_file:
+      - .env
+    command: redis-server --requirepass ${RSS_REDIS_PASSWORD} --appendonly yes --port 1726
+    volumes:
+      - rss_redis_data:/data
+    ports:
+      - "1726:1726"
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+
+  # RSS Service Main Application (Local Build)
+  rss-service:
+    build:
+      context: ../Viralogic/micro-services/rss-service
+      dockerfile: Dockerfile
+      args:
+        SECRET_KEY: ${SECRET_KEY}
+        DB_PASSWORD: ${DB_PASSWORD}
+        POSTGRES_DB: viralogic
+        POSTGRES_USER: viralogic_user
+        REDIS_PASSWORD: ${REDIS_PASSWORD}
+        OPEN_ROUTER_API_KEY: ${OPEN_ROUTER_API_KEY}
+        RSS_SERVICE_API_KEY: ${RSS_SERVICE_API_KEY}
+        RSS_SERVICE_DEBUG: false
+    env_file:
+      - .env
+    ports:
+      - "1722:1722"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 1722
+    depends_on:
+      - rss-postgres
+      - rss-redis
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+
+  # RSS Service Celery Worker (Local Build)
+  rss-celery-worker:
+    build:
+      context: ../Viralogic/micro-services/rss-service
+      dockerfile: Dockerfile
+      args:
+        SECRET_KEY: ${SECRET_KEY}
+        DB_PASSWORD: ${DB_PASSWORD}
+        POSTGRES_DB: viralogic
+        POSTGRES_USER: viralogic_user
+        REDIS_PASSWORD: ${REDIS_PASSWORD}
+        OPEN_ROUTER_API_KEY: ${OPEN_ROUTER_API_KEY}
+        RSS_SERVICE_API_KEY: ${RSS_SERVICE_API_KEY}
+        RSS_SERVICE_DEBUG: false
+    env_file:
+      - .env
+    command: celery -A app.celery.celery_app worker --loglevel=info
+    depends_on:
+      - rss-postgres
+      - rss-redis
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+
+  # RSS Service Celery Beat (Local Build)
+  rss-celery-beat:
+    build:
+      context: ../Viralogic/micro-services/rss-service
+      dockerfile: Dockerfile
+      args:
+        SECRET_KEY: ${SECRET_KEY}
+        DB_PASSWORD: ${DB_PASSWORD}
+        POSTGRES_DB: viralogic
+        POSTGRES_USER: viralogic_user
+        REDIS_PASSWORD: ${REDIS_PASSWORD}
+        OPEN_ROUTER_API_KEY: ${OPEN_ROUTER_API_KEY}
+        RSS_SERVICE_API_KEY: ${RSS_SERVICE_API_KEY}
+        RSS_SERVICE_DEBUG: false
+    env_file:
+      - .env
+    command: celery -A app.celery.celery_app beat --loglevel=info --schedule=/app/celerybeat-data/celerybeat-schedule
+    volumes:
+      - rss_celery_beat_data:/app/celerybeat-data
+    depends_on:
+      - rss-postgres
+      - rss-redis
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+
+  # RSS Service Flower (Celery Monitoring)
+  rss-flower:
+    image: mher/flower:2.0.1
+    env_file:
+      - .env
+    ports:
+      - "1727:1727"
+    command: celery flower --port=1727
+    depends_on:
+      - rss-redis
+      - rss-celery-worker
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+
+  # Cloudflare Tunnel for RSS Service
+  cloudflared-rss:
+    image: cloudflare/cloudflared:latest
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    command: tunnel --config /etc/cloudflared/rss-config.yml run viralogic-rss-production
+    depends_on:
+      - rss-service
+    restart: unless-stopped
+    networks:
+      - rss-service-network
+
+volumes:
+  rss_postgres_data:
+  rss_redis_data:
+  rss_celery_beat_data:
+
+networks:
+  rss-service-network:
+    driver: bridge
