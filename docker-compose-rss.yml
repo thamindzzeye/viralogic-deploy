@@ -106,9 +106,6 @@ services:
     networks:
       - rss-service-network
 
-volumes:
-  # Volumes are now mapped to host directories for backup purposes
-
 networks:
   rss-service-network:
     driver: bridge

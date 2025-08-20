@@ -108,9 +108,6 @@ services:
     networks:
       - viralogic-network
 
-volumes:
-  # Volumes are now mapped to host directories for backup purposes
-
 networks:
   viralogic-network:
     driver: bridge
