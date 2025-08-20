@@ -151,28 +151,28 @@ restore_databases() {
     print_status "   RSS:  $rss_dump"
     
     # Load production environment variables
-    if [[ -f "main/.env" ]]; then
+    if [[ -f "Viralogic/.env" ]]; then
         # Use export to avoid shell interpretation issues
-        export $(grep -v '^#' main/.env | xargs)
+        export $(grep -v '^#' Viralogic/.env | xargs)
         print_success "Loaded main app environment"
     else
-        print_error "Main app .env file not found at main/.env"
+        print_error "Main app .env file not found at Viralogic/.env"
         exit 1
     fi
     
-    if [[ -f "rss/.env" ]]; then
+    if [[ -f "rss-service/.env" ]]; then
         # Use export to avoid shell interpretation issues
-        export $(grep -v '^#' rss/.env | xargs)
+        export $(grep -v '^#' rss-service/.env | xargs)
         print_success "Loaded RSS service environment"
     else
-        print_error "RSS service .env file not found at rss/.env"
+        print_error "RSS service .env file not found at rss-service/.env"
         exit 1
     fi
     
     # Stop services to avoid conflicts
     print_status "Stopping production services..."
-    docker-compose -f docker-compose-main-local.yml down
-    docker-compose -f docker-compose-rss-local.yml down
+    docker-compose -f Viralogic/docker-compose-main-local.yml down
+    docker-compose -f rss-service/docker-compose-rss-local.yml down
     
     # Wait for services to stop
     sleep 5
@@ -197,8 +197,8 @@ restore_databases() {
     
     # Restart services
     print_status "Restarting production services..."
-    docker-compose -f docker-compose-main-local.yml up -d
-    docker-compose -f docker-compose-rss-local.yml up -d
+    docker-compose -f Viralogic/docker-compose-main-local.yml up -d
+    docker-compose -f rss-service/docker-compose-rss-local.yml up -d
     
     print_success "Database restore completed successfully!"
 }
