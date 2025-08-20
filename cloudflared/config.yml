@@ -2,10 +2,10 @@ tunnel: viralogic-production
 credentials-file: /etc/cloudflared/viralogic-production-tunnel.json
 
 ingress:
-  - hostname: viralogic-api.tbdv.org
+  - hostname: api.viralogic.io
     service: http://backend:1720
 
-  - hostname: viralogic.tbdv.org
+  - hostname: viralogic.io
     service: http://frontend:1721
 
   - service: http_status:404
