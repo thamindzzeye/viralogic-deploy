@@ -38,6 +38,22 @@ print_error() {
 IMAGE_TAG=${1:-main}
 GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-thamindzzeye/viralogic}
 
+# Check if this is a stop command
+if [[ "$1" == "stop" ]]; then
+    print_status "Stopping all Viralogic services..."
+    
+    cd $SCRIPT_DIR
+    
+    print_status "Stopping main application services..."
+    docker-compose -f docker-compose-main.yml down --remove-orphans
+    
+    print_status "Stopping RSS service..."
+    docker-compose -f docker-compose-rss.yml down --remove-orphans
+    
+    print_success "All services stopped successfully!"
+    exit 0
+fi
+
 print_status "Starting Viralogic deployment..."
 print_status "Image tag: $IMAGE_TAG"
 print_status "Repository: $GITHUB_REPOSITORY"
@@ -143,69 +159,124 @@ fi
 
 print_success "All images pulled successfully"
 
-# Deploy main application
-print_status "Deploying main application..."
+# Navigate to script directory
 cd $SCRIPT_DIR
 
-docker-compose -f docker-compose-main.yml down
-docker-compose -f docker-compose-main.yml up -d
+# =============================================================================
+# CLEANUP PHASE - Stop all services first
+# =============================================================================
+print_status "Starting cleanup phase..."
 
-print_success "Main application deployed"
+print_status "Stopping main application services..."
+if docker-compose -f docker-compose-main.yml down --remove-orphans; then
+    print_success "Main application services stopped"
+else
+    print_warning "Some main application services may not have stopped cleanly"
+fi
+
+print_status "Stopping RSS service..."
+if docker-compose -f docker-compose-rss.yml down --remove-orphans; then
+    print_success "RSS service stopped"
+else
+    print_warning "Some RSS services may not have stopped cleanly"
+fi
+
+# Clean up unused Docker resources
+print_status "Cleaning up unused Docker resources..."
+docker system prune -f --volumes
+
+# =============================================================================
+# DEPLOYMENT PHASE
+# =============================================================================
+print_status "Starting deployment phase..."
+
+# Deploy main application
+print_status "Deploying main application..."
+if docker-compose -f docker-compose-main.yml up -d; then
+    print_success "Main application deployed successfully"
+else
+    print_error "Failed to deploy main application"
+    exit 1
+fi
 
 # Deploy RSS service
 print_status "Deploying RSS service..."
-docker-compose -f docker-compose-rss.yml down
-docker-compose -f docker-compose-rss.yml up -d
+if docker-compose -f docker-compose-rss.yml up -d; then
+    print_success "RSS service deployed successfully"
+else
+    print_error "Failed to deploy RSS service"
+    exit 1
+fi
 
-print_success "RSS service deployed"
-
-# Wait for services to start
+# =============================================================================
+# HEALTH CHECK PHASE
+# =============================================================================
 print_status "Waiting for services to start..."
 sleep 30
 
-# Health checks
 print_status "Running health checks..."
 
+# Function to check health with retries
+check_health() {
+    local service_name=$1
+    local url=$2
+    local max_attempts=5
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        if curl -f -s --max-time 10 "$url" > /dev/null 2>&1; then
+            print_success "$service_name health check passed"
+            return 0
+        else
+            if [ $attempt -eq $max_attempts ]; then
+                print_warning "$service_name health check failed after $max_attempts attempts"
+                return 1
+            else
+                print_status "Attempt $attempt/$max_attempts: $service_name not ready, retrying in 10 seconds..."
+                sleep 10
+                attempt=$((attempt + 1))
+            fi
+        fi
+    done
+}
+
 # Check main app backend
-if curl -f http://localhost:1720/health > /dev/null 2>&1; then
-    print_success "Backend health check passed"
-else
-    print_warning "Backend health check failed (port 1720)"
-fi
+check_health "Backend API" "http://localhost:1720/health"
 
 # Check main app frontend
-if curl -f http://localhost:1721 > /dev/null 2>&1; then
-    print_success "Frontend health check passed"
-else
-    print_warning "Frontend health check failed (port 1721)"
-fi
+check_health "Frontend" "http://localhost:1721"
 
 # Check RSS service
-if curl -f http://localhost:1722/health/public > /dev/null 2>&1; then
-    print_success "RSS service health check passed"
-else
-    print_warning "RSS service health check failed (port 1722)"
-fi
+check_health "RSS Service" "http://localhost:1722/health/public"
 
 # Check RSS Flower monitoring
-if curl -f http://localhost:1727 > /dev/null 2>&1; then
-    print_success "RSS Flower monitoring health check passed"
-else
-    print_warning "RSS Flower monitoring health check failed (port 1727)"
-fi
+check_health "RSS Flower" "http://localhost:1727"
 
-# Show service status
+# =============================================================================
+# FINAL STATUS & SUMMARY
+# =============================================================================
 print_status "Service status:"
-docker-compose -f docker-compose-main.yml ps
-docker-compose -f docker-compose-rss.yml ps
+print_status "Main application services:"
+docker-compose -f docker-compose-main.yml ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
 
-print_success "Deployment completed!"
-print_status "Your application should be available at:"
-print_status "  Frontend: https://viralogic.io"
-print_status "  API: https://api.viralogic.io"
-print_status "  RSS Service: https://rss.viralogic.io"
+print_status "RSS service:"
+docker-compose -f docker-compose-rss.yml ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
 
-print_status "To view logs:"
-print_status "  Main app: docker-compose -f docker-compose-main.yml logs -f"
-print_status "  RSS service: docker-compose -f docker-compose-rss.yml logs -f"
+print_success "🎉 Deployment completed successfully!"
+echo ""
+print_status "🌐 Your application is now available at:"
+print_status "  📱 Frontend: https://viralogic.io"
+print_status "  🔌 API: https://api.viralogic.io"
+print_status "  📰 RSS Service: https://rss.viralogic.io"
+echo ""
+print_status "📋 Useful commands:"
+print_status "  View main app logs: docker-compose -f docker-compose-main.yml logs -f"
+print_status "  View RSS service logs: docker-compose -f docker-compose-rss.yml logs -f"
+print_status "  View all services: docker-compose -f docker-compose-main.yml -f docker-compose-rss.yml ps"
+print_status "  Stop all services: ./deploy.sh stop"
+echo ""
+print_status "🔍 Health check endpoints:"
+print_status "  Backend: https://api.viralogic.io/health"
+print_status "  RSS Service: https://rss.viralogic.io/health/public"
+print_status "  RSS Flower: https://rss.viralogic.io:1727"
 
