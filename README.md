@@ -31,14 +31,14 @@ Download the JSON credentials for each tunnel.
 
 ### 2. Add Tunnel Credentials
 
-Create the tunnel JSON files in the `cloudflared/` directory:
+Create the tunnel JSON files in their respective service directories:
 
 ```bash
 # Main app tunnel
-echo 'YOUR_MAIN_TUNNEL_JSON_CONTENT' > cloudflared/viralogic-production-tunnel.json
+echo 'YOUR_MAIN_TUNNEL_JSON_CONTENT' > Viralogic/cloudflared/viralogic-production-tunnel.json
 
-# RSS service tunnel  
-echo 'YOUR_RSS_TUNNEL_JSON_CONTENT' > cloudflared/viralogic-rss-production-tunnel.json
+# RSS service tunnel
+echo 'YOUR_RSS_TUNNEL_JSON_CONTENT' > rss-service/cloudflared/viralogic-rss-production-tunnel.json
 ```
 
 ### 3. Verify Files
@@ -46,10 +46,10 @@ echo 'YOUR_RSS_TUNNEL_JSON_CONTENT' > cloudflared/viralogic-rss-production-tunne
 Ensure you have these files:
 - `docker-compose-main.yml` - Main application services
 - `docker-compose-rss.yml` - RSS service
-- `cloudflared/config.yml` - Main tunnel configuration
-- `cloudflared/rss-config.yml` - RSS tunnel configuration
-- `cloudflared/viralogic-production-tunnel.json` - Main tunnel credentials
-- `cloudflared/viralogic-rss-production-tunnel.json` - RSS tunnel credentials
+- `Viralogic/cloudflared/config.yml` - Main tunnel configuration
+- `Viralogic/cloudflared/viralogic-production-tunnel.json` - Main tunnel credentials
+- `rss-service/cloudflared/config.yml` - RSS tunnel configuration
+- `rss-service/cloudflared/viralogic-rss-production-tunnel.json` - RSS tunnel credentials
 
 ## Deployment Process
 
@@ -120,10 +120,10 @@ curl http://localhost:1722/health/public  # RSS Service
 ### Missing Tunnel Credentials
 ```bash
 # Check if tunnel files exist
-ls -la cloudflared/*.json
+ls -la Viralogic/cloudflared/*.json rss-service/cloudflared/*.json
 
 # Create from GitHub secrets (if you have access)
-echo '$GITHUB_SECRET_CONTENT' > cloudflared/viralogic-production-tunnel.json
+echo '$GITHUB_SECRET_CONTENT' > Viralogic/cloudflared/viralogic-production-tunnel.json
 ```
 
 ### Image Pull Issues

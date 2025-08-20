@@ -20,7 +20,8 @@ viralogic-deploy/
 ├── docker-compose-rss-local.yml       # RSS service with local builds
 ├── deploy-local.sh                    # Local deployment script
 ├── .env                               # Environment variables
-└── cloudflared/                       # Cloudflare tunnel configs
+├── Viralogic/cloudflared/              # Main app tunnel configs
+└── rss-service/cloudflared/           # RSS service tunnel configs
 ```
 
 ## 🔧 Prerequisites
@@ -28,7 +29,7 @@ viralogic-deploy/
 1. **Docker & Docker Compose** installed
 2. **Viralogic source code** cloned at `../Viralogic` (same level as viralogic-deploy)
 3. **Environment file** (`.env`) with all required variables
-4. **Cloudflare tunnel credentials** in `cloudflared/` directory
+4. **Cloudflare tunnel credentials** in service-specific `cloudflared/` directories
 
 ## 📋 Directory Structure
 

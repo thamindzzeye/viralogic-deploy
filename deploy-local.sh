@@ -79,14 +79,14 @@ if [[ ! -f "$SCRIPT_DIR/rss-service/docker-compose-rss-local.yml" ]]; then
     exit 1
 fi
 
-if [[ ! -f "$SCRIPT_DIR/cloudflared/viralogic-production-tunnel.json" ]]; then
-    print_error "Main cloudflare tunnel JSON not found: cloudflared/viralogic-production-tunnel.json"
+if [[ ! -f "$SCRIPT_DIR/Viralogic/cloudflared/viralogic-production-tunnel.json" ]]; then
+    print_error "Main cloudflare tunnel JSON not found: Viralogic/cloudflared/viralogic-production-tunnel.json"
     print_status "Please create this file with your tunnel credentials"
     exit 1
 fi
 
-if [[ ! -f "$SCRIPT_DIR/cloudflared/viralogic-rss-production-tunnel.json" ]]; then
-    print_error "RSS cloudflare tunnel JSON not found: cloudflared/viralogic-rss-production-tunnel.json"
+if [[ ! -f "$SCRIPT_DIR/rss-service/cloudflared/viralogic-rss-production-tunnel.json" ]]; then
+    print_error "RSS cloudflare tunnel JSON not found: rss-service/cloudflared/viralogic-rss-production-tunnel.json"
     print_status "Please create this file with your tunnel credentials"
     exit 1
 fi

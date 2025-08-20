@@ -99,7 +99,7 @@ services:
     image: cloudflare/cloudflared:latest
     volumes:
       - ./cloudflared:/etc/cloudflared
-    command: tunnel --config /etc/cloudflared/rss-config.yml run viralogic-rss-production
+    command: tunnel --config /etc/cloudflared/config.yml run viralogic-rss-production
     depends_on:
       - rss-service
     restart: unless-stopped
