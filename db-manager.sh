@@ -69,11 +69,19 @@ dump_databases() {
     # Load environment variables
     print_status "Loading environment variables..."
     
-    if [[ -f ".env" ]]; then
-        source .env
-        print_success "Loaded production environment"
+    if [[ -f "main/.env" ]]; then
+        source main/.env
+        print_success "Loaded main app environment"
     else
-        print_error ".env not found"
+        print_error "Main app .env not found at main/.env"
+        exit 1
+    fi
+    
+    if [[ -f "rss/.env" ]]; then
+        source rss/.env
+        print_success "Loaded RSS service environment"
+    else
+        print_error "RSS service .env not found at rss/.env"
         exit 1
     fi
     
@@ -141,11 +149,19 @@ restore_databases() {
     print_status "   RSS:  $rss_dump"
     
     # Load production environment variables
-    if [[ -f ".env" ]]; then
-        source .env
-        print_success "Loaded production environment"
+    if [[ -f "main/.env" ]]; then
+        source main/.env
+        print_success "Loaded main app environment"
     else
-        print_error "Production .env file not found"
+        print_error "Main app .env file not found at main/.env"
+        exit 1
+    fi
+    
+    if [[ -f "rss/.env" ]]; then
+        source rss/.env
+        print_success "Loaded RSS service environment"
+    else
+        print_error "RSS service .env file not found at rss/.env"
         exit 1
     fi
     
