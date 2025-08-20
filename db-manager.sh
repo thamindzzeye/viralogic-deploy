@@ -70,7 +70,8 @@ dump_databases() {
     print_status "Loading environment variables..."
     
     if [[ -f "main/.env" ]]; then
-        source main/.env
+        # Use export to avoid shell interpretation issues
+        export $(grep -v '^#' main/.env | xargs)
         print_success "Loaded main app environment"
     else
         print_error "Main app .env not found at main/.env"
@@ -78,7 +79,8 @@ dump_databases() {
     fi
     
     if [[ -f "rss/.env" ]]; then
-        source rss/.env
+        # Use export to avoid shell interpretation issues
+        export $(grep -v '^#' rss/.env | xargs)
         print_success "Loaded RSS service environment"
     else
         print_error "RSS service .env not found at rss/.env"
@@ -150,7 +152,8 @@ restore_databases() {
     
     # Load production environment variables
     if [[ -f "main/.env" ]]; then
-        source main/.env
+        # Use export to avoid shell interpretation issues
+        export $(grep -v '^#' main/.env | xargs)
         print_success "Loaded main app environment"
     else
         print_error "Main app .env file not found at main/.env"
@@ -158,7 +161,8 @@ restore_databases() {
     fi
     
     if [[ -f "rss/.env" ]]; then
-        source rss/.env
+        # Use export to avoid shell interpretation issues
+        export $(grep -v '^#' rss/.env | xargs)
         print_success "Loaded RSS service environment"
     else
         print_error "RSS service .env file not found at rss/.env"
