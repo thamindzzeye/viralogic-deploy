@@ -75,6 +75,21 @@ if [[ ! -f "output/images/rss-service-$IMAGE_TAG.tar.gz" ]]; then
     exit 1
 fi
 
+# Check for required environment files
+print_status "Checking environment files..."
+
+if [[ ! -f "main/.env" ]]; then
+    print_error "main/.env file not found"
+    print_status "Please ensure main/.env exists with all required environment variables"
+    exit 1
+fi
+
+if [[ ! -f "rss/.env" ]]; then
+    print_error "rss/.env file not found"
+    print_status "Please ensure rss/.env exists with all required environment variables"
+    exit 1
+fi
+
 print_success "All required files found"
 
 # Load Docker images
@@ -90,6 +105,11 @@ print_status "Loading RSS service image..."
 docker load < "output/images/rss-service-$IMAGE_TAG.tar.gz"
 
 print_success "All images loaded successfully!"
+
+# Load environment variables for Docker Compose
+print_status "Loading environment variables..."
+export REDIS_PASSWORD=$(grep "^REDIS_PASSWORD=" main/.env | cut -d'=' -f2)
+export RSS_REDIS_PASSWORD=$(grep "^REDIS_PASSWORD=" rss/.env | cut -d'=' -f2)
 
 # Show loaded images
 print_status "Loaded images:"
