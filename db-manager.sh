@@ -169,13 +169,14 @@ restore_databases() {
         exit 1
     fi
     
-    # Stop services to avoid conflicts
-    print_status "Stopping production services..."
-    docker-compose -f Viralogic/docker-compose-main-local.yml down
-    docker-compose -f rss-service/docker-compose-rss-local.yml down
+    # Start services first (if not already running)
+    print_status "Starting production services..."
+    docker-compose -f Viralogic/docker-compose-main-local.yml up -d
+    docker-compose -f rss-service/docker-compose-rss-local.yml up -d
     
-    # Wait for services to stop
-    sleep 5
+    # Wait for services to start
+    print_status "Waiting for services to start..."
+    sleep 10
     
     # Restore main database
     print_status "Restoring main database..."
@@ -194,11 +195,6 @@ restore_databases() {
         print_error "Failed to restore RSS database"
         exit 1
     fi
-    
-    # Restart services
-    print_status "Restarting production services..."
-    docker-compose -f Viralogic/docker-compose-main-local.yml up -d
-    docker-compose -f rss-service/docker-compose-rss-local.yml up -d
     
     print_success "Database restore completed successfully!"
 }
