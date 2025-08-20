@@ -49,7 +49,7 @@ services:
       - .env
     ports:
       - "1721:1721"
-    command: npm start -- --port 1721
+    command: node server.js
     depends_on:
       - backend
     networks:
