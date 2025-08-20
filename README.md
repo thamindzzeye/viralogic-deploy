@@ -95,7 +95,7 @@ export RSS_REDIS_PASSWORD="your_rss_redis_password"
 📋 **See [PORT_MAPPING.md](PORT_MAPPING.md) for detailed port configuration**
 
 ### Cloudflare Tunnels
-- **Main App**: `viralogic-production` → `viralogic.tbdv.org` & `viralogic-api.tbdv.org`
+- **Main App**: `viralogic-production` → `viralogic.io` & `api.viralogic.io`
 - **RSS Service**: `viralogic-rss-production` → `rss.viralogic.io`
 
 ## Monitoring

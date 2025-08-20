@@ -44,8 +44,8 @@ This document outlines all port mappings for the Viralogic platform deployment.
 
 ### Main Application Tunnel
 - **Tunnel Name**: `viralogic-production`
-- **Domain**: `viralogic.tbdv.org` → `http://frontend:1721`
-- **Domain**: `viralogic-api.tbdv.org` → `http://backend:1720`
+- **Domain**: `viralogic.io` → `http://frontend:1721`
+- **Domain**: `api.viralogic.io` → `http://backend:1720`
 
 ### RSS Service Tunnel
 - **Tunnel Name**: `viralogic-rss-production`

@@ -201,8 +201,8 @@ docker-compose -f docker-compose-rss.yml ps
 
 print_success "Deployment completed!"
 print_status "Your application should be available at:"
-print_status "  Frontend: https://viralogic.tbdv.org"
-print_status "  API: https://viralogic-api.tbdv.org"
+print_status "  Frontend: https://viralogic.io"
+print_status "  API: https://api.viralogic.io"
 print_status "  RSS Service: https://rss.viralogic.io"
 
 print_status "To view logs:"
