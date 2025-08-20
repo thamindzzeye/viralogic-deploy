@@ -75,6 +75,21 @@ if [[ ! -f "output/images/rss-service-$IMAGE_TAG.tar.gz" ]]; then
     exit 1
 fi
 
+# Check for required environment files
+print_status "Checking environment files..."
+
+if [[ ! -f "Viralogic/.env" ]]; then
+    print_error "Viralogic/.env file not found"
+    print_status "Please ensure Viralogic/.env exists with all required environment variables"
+    exit 1
+fi
+
+if [[ ! -f "rss-service/.env" ]]; then
+    print_error "rss-service/.env file not found"
+    print_status "Please ensure rss-service/.env exists with all required environment variables"
+    exit 1
+fi
+
 print_success "All required files found"
 
 # Load Docker images
@@ -95,58 +110,49 @@ print_success "All images loaded successfully!"
 print_status "Loaded images:"
 docker images | grep viralogic
 
-# Create docker-compose override file
-print_status "Creating docker-compose override file..."
+# Load environment variables for Docker Compose
+print_status "Loading environment variables..."
+export REDIS_PASSWORD=$(grep "^REDIS_PASSWORD=" Viralogic/.env | cut -d'=' -f2)
+export RSS_REDIS_PASSWORD=$(grep "^REDIS_PASSWORD=" rss-service/.env | cut -d'=' -f2)
 
-cat > "docker-compose-artifacts.yml" << EOF
-# Docker Compose override for artifact deployment
-# Generated on: $(date)
+# Deploy containers automatically
+print_status "🚀 Deploying containers..."
 
-services:
-  backend:
-    image: viralogic/backend:$IMAGE_TAG
+# Stop any existing containers first
+print_status "Stopping existing containers..."
+docker-compose -f Viralogic/docker-compose-main-local.yml down --remove-orphans 2>/dev/null || true
+docker-compose -f rss-service/docker-compose-rss-local.yml down --remove-orphans 2>/dev/null || true
 
-  frontend:
-    image: viralogic/frontend:$IMAGE_TAG
-
-  celeryworker:
-    image: viralogic/backend:$IMAGE_TAG
-
-  celerybeat:
-    image: viralogic/backend:$IMAGE_TAG
-
-  rss-service:
-    image: viralogic/rss-service:$IMAGE_TAG
-
-  rss-celery-worker:
-    image: viralogic/rss-service:$IMAGE_TAG
-
-  rss-celery-beat:
-    image: viralogic/rss-service:$IMAGE_TAG
-EOF
-
-print_success "Docker Compose override created: docker-compose-artifacts.yml"
-
-# Copy override to deployment directory if specified
-if [[ -n "$DEPLOYMENT_DIR" && -d "$DEPLOYMENT_DIR" ]]; then
-    print_status "Copying override to deployment directory..."
-    cp "docker-compose-artifacts.yml" "$DEPLOYMENT_DIR/"
-    print_success "Override copied to $DEPLOYMENT_DIR/"
+# Deploy main application
+print_status "Deploying main application..."
+if docker-compose -f Viralogic/docker-compose-main-local.yml up -d; then
+    print_success "Main application deployed successfully"
+else
+    print_error "Failed to deploy main application"
+    exit 1
 fi
 
-print_success "🎉 Artifact deployment completed successfully!"
-echo ""
-print_status "📋 Next steps:"
-print_status "  1. Navigate to your deployment directory:"
-print_status "     cd $DEPLOYMENT_DIR"
-print_status ""
-print_status "  2. Deploy main application:"
-print_status "     docker-compose -f Viralogic/docker-compose-main.yml -f docker-compose-artifacts.yml up -d"
-print_status ""
-print_status "  3. Deploy RSS service:"
-print_status "     docker-compose -f rss-service/docker-compose-rss.yml -f docker-compose-artifacts.yml up -d"
+# Deploy RSS service
+print_status "Deploying RSS service..."
+if docker-compose -f rss-service/docker-compose-rss-local.yml up -d; then
+    print_success "RSS service deployed successfully"
+else
+    print_error "Failed to deploy RSS service"
+    exit 1
+fi
+
+# Wait for services to start
+print_status "Waiting for services to start..."
+sleep 10
+
+# Show deployment status
+print_status "📊 Deployment Status:"
+docker-compose -f Viralogic/docker-compose-main-local.yml -f rss-service/docker-compose-rss-local.yml ps
+
+print_success "🎉 Artifact deployment and container startup completed successfully!"
 echo ""
 print_status "💡 Benefits:"
 print_status "  ✅ Instant deployment (no build time)"
 print_status "  ✅ Consistent builds across environments"
 print_status "  ✅ Faster iteration cycles"
+print_status "  ✅ Automatic container startup"
