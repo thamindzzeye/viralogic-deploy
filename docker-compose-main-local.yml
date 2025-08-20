@@ -3,7 +3,7 @@ services:
   postgres:
     image: postgres:15-alpine
     env_file:
-      - main/.env
+      - .env.main
     command: postgres -p 1723
     volumes:
       - ../docker_volumes/viralogic-postgres:/data
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     env_file:
-      - main/.env
+      - .env.main
     command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
       - ../docker_volumes/viralogic-redis:/data
@@ -33,7 +33,7 @@ services:
   backend:
     image: viralogic/backend:local
     env_file:
-      - main/.env
+      - .env.main
     ports:
       - "1720:1720"
     command: uvicorn app.main:app --host 0.0.0.0 --port 1720
@@ -52,7 +52,7 @@ services:
   frontend:
     image: viralogic/frontend:local
     env_file:
-      - main/.env
+      - .env.main
     ports:
       - "1721:1721"
     command: node server.js
@@ -69,7 +69,7 @@ services:
     image: viralogic/backend:local
     command: celery -A app.celery.celery_app worker --loglevel=info --concurrency=10 -Q celery,auto_post,file_processing,ai_content_generation
     env_file:
-      - main/.env
+      - .env.main
     volumes:
       - ../docker_volumes_nobackup/viralogic-logs:/logs
     depends_on:
@@ -84,7 +84,7 @@ services:
     image: viralogic/backend:local
     command: celery -A app.celery.celery_app beat --loglevel=info
     env_file:
-      - main/.env
+      - .env.main
     volumes:
       - ../docker_volumes_nobackup/viralogic-logs:/logs
       - ../docker_volumes_nobackup/viralogic-celerybeat:/var/lib/celery
@@ -107,6 +107,9 @@ services:
     restart: unless-stopped
     networks:
       - viralogic-network
+
+volumes:
+  # Volumes are now mapped to host directories for backup purposes
 
 networks:
   viralogic-network:
