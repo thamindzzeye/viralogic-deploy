@@ -60,7 +60,7 @@ dump_databases() {
     
     if ! docker ps | grep -q "viralogic-deploy_rss-postgres"; then
         print_error "Production RSS PostgreSQL container not running. Please start RSS service first:"
-        print_status "   docker-compose -f docker-compose-rss.yml up -d"
+        print_status "   docker-compose -f rss-service/docker-compose-rss.yml up -d"
         exit 1
     fi
     

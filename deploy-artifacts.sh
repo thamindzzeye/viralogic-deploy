@@ -75,21 +75,6 @@ if [[ ! -f "output/images/rss-service-$IMAGE_TAG.tar.gz" ]]; then
     exit 1
 fi
 
-# Check for required environment files
-print_status "Checking environment files..."
-
-if [[ ! -f "main/.env" ]]; then
-    print_error "main/.env file not found"
-    print_status "Please ensure main/.env exists with all required environment variables"
-    exit 1
-fi
-
-if [[ ! -f "rss/.env" ]]; then
-    print_error "rss/.env file not found"
-    print_status "Please ensure rss/.env exists with all required environment variables"
-    exit 1
-fi
-
 print_success "All required files found"
 
 # Load Docker images
@@ -106,16 +91,48 @@ docker load < "output/images/rss-service-$IMAGE_TAG.tar.gz"
 
 print_success "All images loaded successfully!"
 
-# Load environment variables for Docker Compose
-print_status "Loading environment variables..."
-export REDIS_PASSWORD=$(grep "^REDIS_PASSWORD=" main/.env | cut -d'=' -f2)
-export RSS_REDIS_PASSWORD=$(grep "^REDIS_PASSWORD=" rss/.env | cut -d'=' -f2)
-
 # Show loaded images
 print_status "Loaded images:"
 docker images | grep viralogic
 
+# Create docker-compose override file
+print_status "Creating docker-compose override file..."
 
+cat > "docker-compose-artifacts.yml" << EOF
+# Docker Compose override for artifact deployment
+# Generated on: $(date)
+
+services:
+  backend:
+    image: viralogic/backend:$IMAGE_TAG
+
+  frontend:
+    image: viralogic/frontend:$IMAGE_TAG
+
+  celeryworker:
+    image: viralogic/backend:$IMAGE_TAG
+
+  celerybeat:
+    image: viralogic/backend:$IMAGE_TAG
+
+  rss-service:
+    image: viralogic/rss-service:$IMAGE_TAG
+
+  rss-celery-worker:
+    image: viralogic/rss-service:$IMAGE_TAG
+
+  rss-celery-beat:
+    image: viralogic/rss-service:$IMAGE_TAG
+EOF
+
+print_success "Docker Compose override created: docker-compose-artifacts.yml"
+
+# Copy override to deployment directory if specified
+if [[ -n "$DEPLOYMENT_DIR" && -d "$DEPLOYMENT_DIR" ]]; then
+    print_status "Copying override to deployment directory..."
+    cp "docker-compose-artifacts.yml" "$DEPLOYMENT_DIR/"
+    print_success "Override copied to $DEPLOYMENT_DIR/"
+fi
 
 print_success "🎉 Artifact deployment completed successfully!"
 echo ""
@@ -124,10 +141,10 @@ print_status "  1. Navigate to your deployment directory:"
 print_status "     cd $DEPLOYMENT_DIR"
 print_status ""
 print_status "  2. Deploy main application:"
-print_status "     docker-compose -f docker-compose-main-local.yml up -d"
+print_status "     docker-compose -f Viralogic/docker-compose-main.yml -f docker-compose-artifacts.yml up -d"
 print_status ""
 print_status "  3. Deploy RSS service:"
-print_status "     docker-compose -f docker-compose-rss-local.yml up -d"
+print_status "     docker-compose -f rss-service/docker-compose-rss.yml -f docker-compose-artifacts.yml up -d"
 echo ""
 print_status "💡 Benefits:"
 print_status "  ✅ Instant deployment (no build time)"

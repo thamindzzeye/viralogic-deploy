@@ -39,10 +39,10 @@ if [[ "$1" == "stop" ]]; then
     cd $SCRIPT_DIR
     
     print_status "Stopping main application services..."
-    docker-compose -f docker-compose-main-local.yml down --remove-orphans
+    docker-compose -f Viralogic/docker-compose-main-local.yml down --remove-orphans
     
     print_status "Stopping RSS service..."
-    docker-compose -f docker-compose-rss-local.yml down --remove-orphans
+    docker-compose -f rss-service/docker-compose-rss-local.yml down --remove-orphans
     
     print_success "All services stopped successfully!"
     exit 0
@@ -69,13 +69,13 @@ print_success "Prerequisites check passed"
 # Check for required files
 print_status "Checking required files..."
 
-if [[ ! -f "$SCRIPT_DIR/docker-compose-main-local.yml" ]]; then
-    print_error "docker-compose-main-local.yml not found"
+if [[ ! -f "$SCRIPT_DIR/Viralogic/docker-compose-main-local.yml" ]]; then
+    print_error "Viralogic/docker-compose-main-local.yml not found"
     exit 1
 fi
 
-if [[ ! -f "$SCRIPT_DIR/docker-compose-rss-local.yml" ]]; then
-    print_error "docker-compose-rss-local.yml not found"
+if [[ ! -f "$SCRIPT_DIR/rss-service/docker-compose-rss-local.yml" ]]; then
+    print_error "rss-service/docker-compose-rss-local.yml not found"
     exit 1
 fi
 
@@ -91,10 +91,16 @@ if [[ ! -f "$SCRIPT_DIR/cloudflared/viralogic-rss-production-tunnel.json" ]]; th
     exit 1
 fi
 
-# Check for .env file
-if [[ ! -f "$SCRIPT_DIR/.env" ]]; then
-    print_error ".env file not found"
-    print_status "Please create a .env file in the deployment directory with all required environment variables"
+# Check for .env files
+if [[ ! -f "$SCRIPT_DIR/Viralogic/.env" ]]; then
+    print_error "Viralogic/.env file not found"
+    print_status "Please create a .env file in the Viralogic directory with all required environment variables"
+    exit 1
+fi
+
+if [[ ! -f "$SCRIPT_DIR/rss-service/.env" ]]; then
+    print_error "rss-service/.env file not found"
+    print_status "Please create a .env file in the rss-service directory with all required environment variables"
     exit 1
 fi
 
@@ -116,14 +122,14 @@ cd $SCRIPT_DIR
 print_status "Starting cleanup phase..."
 
 print_status "Stopping main application services..."
-if docker-compose -f docker-compose-main-local.yml down --remove-orphans; then
+if docker-compose -f Viralogic/docker-compose-main-local.yml down --remove-orphans; then
     print_success "Main application services stopped"
 else
     print_warning "Some main application services may not have stopped cleanly"
 fi
 
 print_status "Stopping RSS service..."
-if docker-compose -f docker-compose-rss-local.yml down --remove-orphans; then
+if docker-compose -f rss-service/docker-compose-rss-local.yml down --remove-orphans; then
     print_success "RSS service stopped"
 else
     print_warning "Some RSS services may not have stopped cleanly"
@@ -140,7 +146,7 @@ print_status "Starting build and deployment phase..."
 
 # Build and deploy main application
 print_status "Building and deploying main application..."
-if docker-compose -f docker-compose-main-local.yml up -d --build; then
+if docker-compose -f Viralogic/docker-compose-main-local.yml up -d --build; then
     print_success "Main application built and deployed successfully"
 else
     print_error "Failed to build and deploy main application"
@@ -149,7 +155,7 @@ fi
 
 # Build and deploy RSS service
 print_status "Building and deploying RSS service..."
-if docker-compose -f docker-compose-rss-local.yml up -d --build; then
+if docker-compose -f rss-service/docker-compose-rss-local.yml up -d --build; then
     print_success "RSS service built and deployed successfully"
 else
     print_error "Failed to build and deploy RSS service"
@@ -205,10 +211,10 @@ check_health "RSS Flower" "http://localhost:1727"
 # =============================================================================
 print_status "Service status:"
 print_status "Main application services:"
-docker-compose -f docker-compose-main-local.yml ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+docker-compose -f Viralogic/docker-compose-main-local.yml ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
 
 print_status "RSS service:"
-docker-compose -f docker-compose-rss-local.yml ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+docker-compose -f rss-service/docker-compose-rss-local.yml ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
 
 print_success "🎉 LOCAL deployment completed successfully!"
 echo ""
@@ -218,11 +224,11 @@ print_status "  🔌 API: https://api.viralogic.io"
 print_status "  📰 RSS Service: https://rss.viralogic.io"
 echo ""
 print_status "📋 Useful commands:"
-print_status "  View main app logs: docker-compose -f docker-compose-main-local.yml logs -f"
-print_status "  View RSS service logs: docker-compose -f docker-compose-rss-local.yml logs -f"
-print_status "  View all services: docker-compose -f docker-compose-main-local.yml -f docker-compose-rss-local.yml ps"
+print_status "  View main app logs: docker-compose -f Viralogic/docker-compose-main-local.yml logs -f"
+print_status "  View RSS service logs: docker-compose -f rss-service/docker-compose-rss-local.yml logs -f"
+print_status "  View all services: docker-compose -f Viralogic/docker-compose-main-local.yml -f rss-service/docker-compose-rss-local.yml ps"
 print_status "  Stop all services: ./deploy-local.sh stop"
-print_status "  Rebuild specific service: docker-compose -f docker-compose-main-local.yml up -d --build backend"
+print_status "  Rebuild specific service: docker-compose -f Viralogic/docker-compose-main-local.yml up -d --build backend"
 echo ""
 print_status "🔍 Health check endpoints:"
 print_status "  Backend: https://api.viralogic.io/health"
