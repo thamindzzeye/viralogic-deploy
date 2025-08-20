@@ -179,7 +179,7 @@ restore_databases() {
     
     # Restore main database
     print_status "Restoring main database..."
-    if PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -p 1723 -U "$POSTGRES_USER" -d "$POSTGRES_DB" < "$main_dump"; then
+    if docker exec -i viralogic-deploy_postgres-1 psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" < "$main_dump"; then
         print_success "Main database restored successfully"
     else
         print_error "Failed to restore main database"
@@ -188,7 +188,7 @@ restore_databases() {
     
     # Restore RSS database
     print_status "Restoring RSS database..."
-    if PGPASSWORD="$RSS_DB_PASSWORD" psql -h localhost -p 1725 -U "$RSS_DB_USER" -d "$RSS_DB_NAME" < "$rss_dump"; then
+    if docker exec -i viralogic-deploy_rss-postgres-1 psql -U "$RSS_DB_USER" -d "$RSS_DB_NAME" < "$rss_dump"; then
         print_success "RSS database restored successfully"
     else
         print_error "Failed to restore RSS database"
