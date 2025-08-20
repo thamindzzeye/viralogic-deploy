@@ -171,8 +171,8 @@ restore_databases() {
     
     # Stop services to avoid conflicts
     print_status "Stopping production services..."
-    docker-compose -f docker-compose-main.yml down
-    docker-compose -f docker-compose-rss.yml down
+    docker-compose -f docker-compose-main-local.yml down
+    docker-compose -f docker-compose-rss-local.yml down
     
     # Wait for services to stop
     sleep 5
@@ -197,8 +197,8 @@ restore_databases() {
     
     # Restart services
     print_status "Restarting production services..."
-    docker-compose -f docker-compose-main.yml up -d
-    docker-compose -f docker-compose-rss.yml up -d
+    docker-compose -f docker-compose-main-local.yml up -d
+    docker-compose -f docker-compose-rss-local.yml up -d
     
     print_success "Database restore completed successfully!"
 }
