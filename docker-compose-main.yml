@@ -2,10 +2,8 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-viralogic}
-      POSTGRES_USER: ${POSTGRES_USER:-viralogic_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    env_file:
+      - .env
     command: postgres -p 1723
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -18,6 +16,8 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
+    env_file:
+      - .env
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --port 1724
     volumes:
       - redis_data:/data
@@ -30,12 +30,8 @@ services:
   # Backend API
   backend:
     image: ghcr.io/thamindzzeye/viralogic/backend:main
-    environment:
-      - ENVIRONMENT=production
-      - DEBUG=false
-      - DATABASE_URL=postgresql://viralogic_user:${DB_PASSWORD}@postgres:1723/viralogic
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:1724/0
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:1724/0
+    env_file:
+      - .env
     ports:
       - "1720:1720"
     command: uvicorn app.main:app --host 0.0.0.0 --port 1720
@@ -49,11 +45,8 @@ services:
   # Frontend
   frontend:
     image: ghcr.io/thamindzzeye/viralogic/frontend:main
-    environment:
-      - NODE_ENV=production
-      - BACKEND_URL=${BACKEND_URL:-https://viralogic-api.tbdv.org}
-      - FRONTEND_URL=${FRONTEND_URL:-https://viralogic.tbdv.org}
-      - MINIO_ENDPOINT=${MINIO_ENDPOINT:-files.tbdv.org}
+    env_file:
+      - .env
     ports:
       - "1721:1721"
     command: npm start -- --port 1721
@@ -67,46 +60,8 @@ services:
   celeryworker:
     image: ghcr.io/thamindzzeye/viralogic/backend:main
     command: celery -A app.celery.celery_app worker --loglevel=info --concurrency=10 -Q celery,auto_post,file_processing,ai_content_generation
-    environment:
-      - ENVIRONMENT=production
-      - DEBUG=false
-      - SECRET_KEY=${SECRET_KEY}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB:-viralogic}
-      - POSTGRES_USER=${POSTGRES_USER:-viralogic_user}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-viralogic_user}:${DB_PASSWORD}@postgres:1723/${POSTGRES_DB:-viralogic}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:1724/0
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:1724/0
-      - OPEN_ROUTER_API_KEY=${OPEN_ROUTER_API_KEY}
-      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
-      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
-      - MINIO_ENDPOINT=${MINIO_ENDPOINT:-files.tbdv.org}
-      - MINIO_SECURE=${MINIO_SECURE:-true}
-      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-viralogic-files}
-      - LINKEDIN_CLIENT_ID=${LINKEDIN_CLIENT_ID}
-      - LINKEDIN_CLIENT_SECRET=${LINKEDIN_CLIENT_SECRET}
-      - YOUTUBE_CLIENT_ID=${YOUTUBE_CLIENT_ID}
-      - YOUTUBE_CLIENT_SECRET=${YOUTUBE_CLIENT_SECRET}
-      - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID}
-      - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET}
-      - THREADS_CLIENT_ID=${THREADS_CLIENT_ID}
-      - THREADS_CLIENT_SECRET=${THREADS_CLIENT_SECRET}
-      - X_CLIENT_ID=${X_CLIENT_ID}
-      - X_CLIENT_SECRET=${X_CLIENT_SECRET}
-      - X_OAUTH1_CLIENT_ID=${X_OAUTH1_CLIENT_ID}
-      - X_OAUTH1_CLIENT_SECRET=${X_OAUTH1_CLIENT_SECRET}
-      - TIKTOK_CLIENT_ID=${TIKTOK_CLIENT_ID}
-      - TIKTOK_CLIENT_SECRET=${TIKTOK_CLIENT_SECRET}
-      - FRONTEND_URL=${FRONTEND_URL:-https://viralogic.tbdv.org}
-      - BACKEND_URL=${BACKEND_URL:-https://viralogic-api.tbdv.org}
-      - COOKIE_SECURE=true
-      - LOG_LEVEL=INFO
-      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-100}
-      - RSS_SERVICE_URL=${RSS_SERVICE_URL:-https://rss.viralogic.io}
-      - RSS_SERVICE_TIMEOUT=${RSS_SERVICE_TIMEOUT:-30}
-      - RSS_SERVICE_API_KEY=${RSS_SERVICE_API_KEY}
-      - RSS_SERVICE_DEBUG=${RSS_SERVICE_DEBUG:-false}
+    env_file:
+      - .env
     depends_on:
       - postgres
       - redis
@@ -118,46 +73,8 @@ services:
   celerybeat:
     image: ghcr.io/thamindzzeye/viralogic/backend:main
     command: celery -A app.celery.celery_app beat --loglevel=info
-    environment:
-      - ENVIRONMENT=production
-      - DEBUG=false
-      - SECRET_KEY=${SECRET_KEY}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB:-viralogic}
-      - POSTGRES_USER=${POSTGRES_USER:-viralogic_user}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-viralogic_user}:${DB_PASSWORD}@postgres:1723/${POSTGRES_DB:-viralogic}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:1724/0
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:1724/0
-      - OPEN_ROUTER_API_KEY=${OPEN_ROUTER_API_KEY}
-      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
-      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
-      - MINIO_ENDPOINT=${MINIO_ENDPOINT:-files.tbdv.org}
-      - MINIO_SECURE=${MINIO_SECURE:-true}
-      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-viralogic-files}
-      - LINKEDIN_CLIENT_ID=${LINKEDIN_CLIENT_ID}
-      - LINKEDIN_CLIENT_SECRET=${LINKEDIN_CLIENT_SECRET}
-      - YOUTUBE_CLIENT_ID=${YOUTUBE_CLIENT_ID}
-      - YOUTUBE_CLIENT_SECRET=${YOUTUBE_CLIENT_SECRET}
-      - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID}
-      - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET}
-      - THREADS_CLIENT_ID=${THREADS_CLIENT_ID}
-      - THREADS_CLIENT_SECRET=${THREADS_CLIENT_SECRET}
-      - X_CLIENT_ID=${X_CLIENT_ID}
-      - X_CLIENT_SECRET=${X_CLIENT_SECRET}
-      - X_OAUTH1_CLIENT_ID=${X_OAUTH1_CLIENT_ID}
-      - X_OAUTH1_CLIENT_SECRET=${X_OAUTH1_CLIENT_SECRET}
-      - TIKTOK_CLIENT_ID=${TIKTOK_CLIENT_ID}
-      - TIKTOK_CLIENT_SECRET=${TIKTOK_CLIENT_SECRET}
-      - FRONTEND_URL=${FRONTEND_URL:-https://viralogic.tbdv.org}
-      - BACKEND_URL=${BACKEND_URL:-https://viralogic-api.tbdv.org}
-      - COOKIE_SECURE=true
-      - LOG_LEVEL=INFO
-      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-100}
-      - RSS_SERVICE_URL=${RSS_SERVICE_URL:-https://rss.viralogic.io}
-      - RSS_SERVICE_TIMEOUT=${RSS_SERVICE_TIMEOUT:-30}
-      - RSS_SERVICE_API_KEY=${RSS_SERVICE_API_KEY}
-      - RSS_SERVICE_DEBUG=${RSS_SERVICE_DEBUG:-false}
+    env_file:
+      - .env
     depends_on:
       - postgres
       - redis

@@ -82,16 +82,10 @@ if [[ ! -f "$SCRIPT_DIR/cloudflared/viralogic-rss-production-tunnel.json" ]]; th
     exit 1
 fi
 
-# Check for RSS service environment variables
-if [[ -z "$RSS_DB_PASSWORD" ]]; then
-    print_error "RSS_DB_PASSWORD environment variable is not set"
-    print_status "Please set: export RSS_DB_PASSWORD='your_rss_db_password'"
-    exit 1
-fi
-
-if [[ -z "$RSS_REDIS_PASSWORD" ]]; then
-    print_error "RSS_REDIS_PASSWORD environment variable is not set"
-    print_status "Please set: export RSS_REDIS_PASSWORD='your_rss_redis_password'"
+# Check for .env file
+if [[ ! -f "$SCRIPT_DIR/.env" ]]; then
+    print_error ".env file not found"
+    print_status "Please create a .env file in the deployment directory with all required environment variables"
     exit 1
 fi
 

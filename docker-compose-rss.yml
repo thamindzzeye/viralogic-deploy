@@ -2,10 +2,8 @@ services:
   # RSS Service PostgreSQL Database
   rss-postgres:
     image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: ${RSS_POSTGRES_DB:-viralogic_rss}
-      POSTGRES_USER: ${RSS_POSTGRES_USER:-viralogic_rss_user}
-      POSTGRES_PASSWORD: ${RSS_DB_PASSWORD}
+    env_file:
+      - .env
     command: postgres -p 1725
     volumes:
       - rss_postgres_data:/var/lib/postgresql/data
@@ -18,6 +16,8 @@ services:
   # RSS Service Redis Cache
   rss-redis:
     image: redis:7-alpine
+    env_file:
+      - .env
     command: redis-server --requirepass ${RSS_REDIS_PASSWORD} --appendonly yes --port 1726
     volumes:
       - rss_redis_data:/data
@@ -30,12 +30,8 @@ services:
   # RSS Service Main Application
   rss-service:
     image: ghcr.io/thamindzzeye/viralogic/rss-service:main
-    environment:
-      - ENVIRONMENT=production
-      - DEBUG=false
-      - DATABASE_URL=postgresql://${RSS_POSTGRES_USER:-viralogic_rss_user}:${RSS_DB_PASSWORD}@rss-postgres:1725/${RSS_POSTGRES_DB:-viralogic_rss}
-      - REDIS_URL=redis://:${RSS_REDIS_PASSWORD}@rss-redis:1726/0
-      - CELERY_BROKER_URL=redis://:${RSS_REDIS_PASSWORD}@rss-redis:1726/0
+    env_file:
+      - .env
     ports:
       - "1722:1722"
     command: uvicorn app.main:app --host 0.0.0.0 --port 1722
@@ -49,12 +45,8 @@ services:
   # RSS Service Celery Worker
   rss-celery-worker:
     image: ghcr.io/thamindzzeye/viralogic/rss-service:main
-    environment:
-      - ENVIRONMENT=production
-      - DEBUG=false
-      - DATABASE_URL=postgresql://${RSS_POSTGRES_USER:-viralogic_rss_user}:${RSS_DB_PASSWORD}@rss-postgres:1725/${RSS_POSTGRES_DB:-viralogic_rss}
-      - REDIS_URL=redis://:${RSS_REDIS_PASSWORD}@rss-redis:1726/0
-      - CELERY_BROKER_URL=redis://:${RSS_REDIS_PASSWORD}@rss-redis:1726/0
+    env_file:
+      - .env
     command: celery -A app.celery.celery_app worker --loglevel=info
     depends_on:
       - rss-postgres
@@ -66,12 +58,8 @@ services:
   # RSS Service Celery Beat
   rss-celery-beat:
     image: ghcr.io/thamindzzeye/viralogic/rss-service:main
-    environment:
-      - ENVIRONMENT=production
-      - DEBUG=false
-      - DATABASE_URL=postgresql://${RSS_POSTGRES_USER:-viralogic_rss_user}:${RSS_DB_PASSWORD}@rss-postgres:1725/${RSS_POSTGRES_DB:-viralogic_rss}
-      - REDIS_URL=redis://:${RSS_REDIS_PASSWORD}@rss-redis:1726/0
-      - CELERY_BROKER_URL=redis://:${RSS_REDIS_PASSWORD}@rss-redis:1726/0
+    env_file:
+      - .env
     command: celery -A app.celery.celery_app beat --loglevel=info --schedule=/app/celerybeat-data/celerybeat-schedule
     volumes:
       - rss_celery_beat_data:/app/celerybeat-data
@@ -85,8 +73,8 @@ services:
   # RSS Service Flower (Celery Monitoring)
   rss-flower:
     image: mher/flower:2.0.1
-    environment:
-      - CELERY_BROKER_URL=redis://:${RSS_REDIS_PASSWORD}@rss-redis:1726/0
+    env_file:
+      - .env
     ports:
       - "1727:1727"
     command: celery flower --port=1727
