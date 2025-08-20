@@ -3,7 +3,7 @@ services:
   postgres:
     image: postgres:15-alpine
     env_file:
-      - .env
+      - .env.main
     command: postgres -p 1723
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -17,7 +17,7 @@ services:
   redis:
     image: redis:7-alpine
     env_file:
-      - .env
+      - .env.main
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --port 1724
     volumes:
       - redis_data:/data
@@ -31,7 +31,7 @@ services:
   backend:
     image: ghcr.io/thamindzzeye/viralogic/backend:main
     env_file:
-      - .env
+      - .env.main
     ports:
       - "1720:1720"
     command: uvicorn app.main:app --host 0.0.0.0 --port 1720
@@ -46,7 +46,7 @@ services:
   frontend:
     image: ghcr.io/thamindzzeye/viralogic/frontend:main
     env_file:
-      - .env
+      - .env.main
     ports:
       - "1721:1721"
     command: node server.js
@@ -61,7 +61,7 @@ services:
     image: ghcr.io/thamindzzeye/viralogic/backend:main
     command: celery -A app.celery.celery_app worker --loglevel=info --concurrency=10 -Q celery,auto_post,file_processing,ai_content_generation
     env_file:
-      - .env
+      - .env.main
     depends_on:
       - postgres
       - redis
@@ -74,7 +74,7 @@ services:
     image: ghcr.io/thamindzzeye/viralogic/backend:main
     command: celery -A app.celery.celery_app beat --loglevel=info
     env_file:
-      - .env
+      - .env.main
     depends_on:
       - postgres
       - redis

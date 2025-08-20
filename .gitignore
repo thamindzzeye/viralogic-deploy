@@ -41,3 +41,6 @@ credentials/
 *.key
 *.crt
 *.p12
+output/
+# Environment files
+.env*

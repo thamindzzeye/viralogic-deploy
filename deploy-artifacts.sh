@@ -95,44 +95,7 @@ print_success "All images loaded successfully!"
 print_status "Loaded images:"
 docker images | grep viralogic
 
-# Create docker-compose override file
-print_status "Creating docker-compose override file..."
 
-cat > "docker-compose-artifacts.yml" << EOF
-# Docker Compose override for artifact deployment
-# Generated on: $(date)
-
-services:
-  backend:
-    image: viralogic/backend:$IMAGE_TAG
-
-  frontend:
-    image: viralogic/frontend:$IMAGE_TAG
-
-  celeryworker:
-    image: viralogic/backend:$IMAGE_TAG
-
-  celerybeat:
-    image: viralogic/backend:$IMAGE_TAG
-
-  rss-service:
-    image: viralogic/rss-service:$IMAGE_TAG
-
-  rss-celery-worker:
-    image: viralogic/rss-service:$IMAGE_TAG
-
-  rss-celery-beat:
-    image: viralogic/rss-service:$IMAGE_TAG
-EOF
-
-print_success "Docker Compose override created: docker-compose-artifacts.yml"
-
-# Copy override to deployment directory if specified
-if [[ -n "$DEPLOYMENT_DIR" && -d "$DEPLOYMENT_DIR" ]]; then
-    print_status "Copying override to deployment directory..."
-    cp "docker-compose-artifacts.yml" "$DEPLOYMENT_DIR/"
-    print_success "Override copied to $DEPLOYMENT_DIR/"
-fi
 
 print_success "🎉 Artifact deployment completed successfully!"
 echo ""
@@ -141,10 +104,10 @@ print_status "  1. Navigate to your deployment directory:"
 print_status "     cd $DEPLOYMENT_DIR"
 print_status ""
 print_status "  2. Deploy main application:"
-print_status "     docker-compose -f docker-compose-main.yml -f docker-compose-artifacts.yml up -d"
+print_status "     docker-compose -f docker-compose-main-local.yml up -d"
 print_status ""
 print_status "  3. Deploy RSS service:"
-print_status "     docker-compose -f docker-compose-rss.yml -f docker-compose-artifacts.yml up -d"
+print_status "     docker-compose -f docker-compose-rss-local.yml up -d"
 echo ""
 print_status "💡 Benefits:"
 print_status "  ✅ Instant deployment (no build time)"
