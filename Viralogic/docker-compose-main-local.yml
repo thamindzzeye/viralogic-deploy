@@ -47,6 +47,12 @@ services:
     networks:
       - viralogic-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import requests; requests.get('http://0.0.0.0:1720/health')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Frontend
   frontend:
@@ -78,6 +84,12 @@ services:
     networks:
       - viralogic-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery.celery_app inspect ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Celery Beat (Scheduler)
   celerybeat:
@@ -94,6 +106,12 @@ services:
     networks:
       - viralogic-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep 'celery.*beat' | grep -v grep || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Cloudflare Tunnel for Main App
   cloudflared-main:

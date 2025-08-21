@@ -6,8 +6,8 @@ services:
       - .env
     command: postgres -p 1725
     volumes:
-      - ../docker_volumes/rss-postgres:/var/lib/postgresql/data
-      - ../docker_volumes_nobackup/rss-postgres:/tmp
+      - ../../docker_volumes/rss-service/postgres:/var/lib/postgresql/data
+      - ../../docker_volumes_nobackup/rss-service/postgres:/tmp
     ports:
       - "1725:1725"
     networks:
@@ -19,10 +19,10 @@ services:
     image: redis:7-alpine
     env_file:
       - .env
-    command: redis-server --requirepass $RSS_REDIS_PASSWORD --appendonly yes --port 1726
+    command: redis-server --port 1726 --requirepass ${REDIS_PASSWORD}
     volumes:
-      - ../docker_volumes/rss-redis:/data
-      - ../docker_volumes_nobackup/rss-redis:/tmp
+      - ../../docker_volumes/rss-service/redis:/data
+      - ../../docker_volumes_nobackup/rss-service/redis:/tmp
     ports:
       - "1726:1726"
     networks:
@@ -38,7 +38,7 @@ services:
       - "1722:1722"
     command: uvicorn app.main:app --host 0.0.0.0 --port 1722
     volumes:
-      - ../docker_volumes_nobackup/rss-logs:/logs
+      - ../../docker_logs/rss-service:/logs
     depends_on:
       - rss-postgres
       - rss-redis
@@ -53,13 +53,19 @@ services:
       - .env
     command: celery -A app.celery.celery_app worker --loglevel=info
     volumes:
-      - ../docker_volumes_nobackup/rss-logs:/logs
+      - ../../docker_logs/rss-service:/logs
     depends_on:
       - rss-postgres
       - rss-redis
     networks:
       - rss-service-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery.celery_app inspect ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # RSS Service Celery Beat
   rss-celery-beat:
@@ -68,14 +74,20 @@ services:
       - .env
     command: celery -A app.celery.celery_app beat --loglevel=info --schedule=/app/celerybeat-data/celerybeat-schedule
     volumes:
-      - ../docker_volumes_nobackup/rss-celerybeat:/app/celerybeat-data
-      - ../docker_volumes_nobackup/rss-logs:/logs
+      - ../../docker_volumes_nobackup/rss-service/celery-beat:/app/celerybeat-data
+      - ../../docker_logs/rss-service:/logs
     depends_on:
       - rss-postgres
       - rss-redis
     networks:
       - rss-service-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import subprocess; exit(0 if 'celery' in subprocess.check_output(['cat', '/proc/1/comm']).decode() else 1)\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # RSS Service Flower (Celery Monitoring)
   rss-flower:
@@ -86,7 +98,7 @@ services:
       - "1727:1727"
     command: celery flower --port=1727
     volumes:
-      - ../docker_volumes_nobackup/rss-flower:/data
+      - ../../docker_volumes_nobackup/rss-service/flower:/data
     depends_on:
       - rss-redis
       - rss-celery-worker

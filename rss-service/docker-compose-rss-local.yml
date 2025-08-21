@@ -60,6 +60,12 @@ services:
     networks:
       - rss-service-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery.celery_app inspect ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # RSS Service Celery Beat
   rss-celery-beat:
@@ -76,6 +82,12 @@ services:
     networks:
       - rss-service-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import subprocess; exit(0 if 'celery' in subprocess.check_output(['cat', '/proc/1/comm']).decode() else 1)\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # RSS Service Flower (Celery Monitoring)
   rss-flower:
