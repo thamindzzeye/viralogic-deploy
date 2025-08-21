@@ -19,7 +19,7 @@ services:
     image: redis:7-alpine
     env_file:
       - .env
-    command: redis-server --port 1724 --requirepass ${REDIS_PASSWORD}
+    command: sh -c "redis-server --port 1724 --requirepass $$REDIS_PASSWORD --appendonly yes --dir /data"
     volumes:
       - ../../docker_volumes/viralogic/redis:/data
       - ../../docker_volumes_nobackup/viralogic/redis:/tmp
