@@ -19,7 +19,7 @@ services:
     image: redis:7-alpine
     env_file:
       - .env
-    command: redis-server --port 1724 --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --port 1724
     volumes:
       - ../../docker_volumes/viralogic/redis:/data
       - ../../docker_volumes_nobackup/viralogic/redis:/tmp
@@ -94,12 +94,12 @@ services:
   # Celery Beat (Scheduler)
   celerybeat:
     image: viralogic/backend:local
-    command: celery -A app.celery.celery_app beat --loglevel=info
+    command: celery -A app.celery.celery_app beat --loglevel=info --schedule=/app/celerybeat-data/celerybeat-schedule
     env_file:
       - .env
     volumes:
       - ../../docker_logs/backend:/logs
-      - ../../docker_volumes_nobackup/viralogic/celerybeat:/var/lib/celery
+      - ../../docker_volumes_nobackup/viralogic/celerybeat:/app/celerybeat-data
     depends_on:
       - postgres
       - redis
