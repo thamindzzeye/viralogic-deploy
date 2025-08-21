@@ -6,8 +6,8 @@ services:
       - .env
     command: postgres -p 1723
     volumes:
-      - ../../docker_volumes/viralogic-postgres:/data
-      - ../../docker_volumes_nobackup/viralogic-postgres:/tmp
+      - ../../docker_volumes/viralogic/postgres:/data
+      - ../../docker_volumes_nobackup/viralogic/postgres:/tmp
     ports:
       - "1723:1723"
     networks:
@@ -19,10 +19,10 @@ services:
     image: redis:7-alpine
     env_file:
       - .env
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --port 1724 --requirepass ${REDIS_PASSWORD}
     volumes:
-      - ../../docker_volumes/viralogic-redis:/data
-      - ../../docker_volumes_nobackup/viralogic-redis:/tmp
+      - ../../docker_volumes/viralogic/redis:/data
+      - ../../docker_volumes_nobackup/viralogic/redis:/tmp
     ports:
       - "1724:1724"
     networks:
@@ -38,7 +38,7 @@ services:
       - "1720:1720"
     command: uvicorn app.main:app --host 0.0.0.0 --port 1720
     volumes:
-      - ../../docker_volumes_nobackup/viralogic-logs:/logs
+      - ../../docker_logs/backend:/logs
       - ../../docker_volumes_nobackup:/temp
       - ../../docker_volumes:/files
     depends_on:
@@ -57,7 +57,7 @@ services:
       - "1721:1721"
     command: node server.js
     volumes:
-      - ../../docker_volumes_nobackup/viralogic-logs:/logs
+      - ../../docker_logs/frontend:/logs
     depends_on:
       - backend
     networks:
@@ -71,7 +71,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ../../docker_volumes_nobackup/viralogic-logs:/logs
+      - ../../docker_logs/backend:/logs
     depends_on:
       - postgres
       - redis
@@ -86,8 +86,8 @@ services:
     env_file:
       - .env
     volumes:
-      - ../../docker_volumes_nobackup/viralogic-logs:/logs
-      - ../../docker_volumes_nobackup/viralogic-celerybeat:/var/lib/celery
+      - ../../docker_logs/backend:/logs
+      - ../../docker_volumes_nobackup/viralogic/celerybeat:/var/lib/celery
     depends_on:
       - postgres
       - redis

@@ -150,10 +150,11 @@ restore_databases() {
     print_status "   Main: $main_dump"
     print_status "   RSS:  $rss_dump"
     
-    # Load production environment variables
+    # Load production environment variables without clobbering between apps
     if [[ -f "Viralogic/.env" ]]; then
-        # Use export to avoid shell interpretation issues
-        export $(grep -v '^#' Viralogic/.env | xargs)
+        MAIN_DB=$(grep -E '^POSTGRES_DB=' Viralogic/.env | cut -d'=' -f2)
+        MAIN_USER=$(grep -E '^POSTGRES_USER=' Viralogic/.env | cut -d'=' -f2)
+        MAIN_PASSWORD=$(grep -E '^POSTGRES_PASSWORD=' Viralogic/.env | cut -d'=' -f2)
         print_success "Loaded main app environment"
     else
         print_error "Main app .env file not found at Viralogic/.env"
@@ -161,8 +162,9 @@ restore_databases() {
     fi
     
     if [[ -f "rss-service/.env" ]]; then
-        # Use export to avoid shell interpretation issues
-        export $(grep -v '^#' rss-service/.env | xargs)
+        RSS_DB=$(grep -E '^POSTGRES_DB=' rss-service/.env | cut -d'=' -f2)
+        RSS_USER=$(grep -E '^POSTGRES_USER=' rss-service/.env | cut -d'=' -f2)
+        RSS_PASSWORD=$(grep -E '^POSTGRES_PASSWORD=' rss-service/.env | cut -d'=' -f2)
         print_success "Loaded RSS service environment"
     else
         print_error "RSS service .env file not found at rss-service/.env"
@@ -180,7 +182,7 @@ restore_databases() {
     
     # Restore main database
     print_status "Restoring main database..."
-    if docker exec -i viralogic-postgres-1 psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" < "$main_dump"; then
+    if docker exec -i viralogic-postgres-1 psql -U "$MAIN_USER" -d "$MAIN_DB" -p 1723 < "$main_dump"; then
         print_success "Main database restored successfully"
     else
         print_error "Failed to restore main database"
@@ -189,7 +191,7 @@ restore_databases() {
     
     # Restore RSS database
     print_status "Restoring RSS database..."
-    if docker exec -i rss-service-postgres-1 psql -U "$RSS_DB_USER" -d "$RSS_DB_NAME" < "$rss_dump"; then
+    if docker exec -i rss-service-rss-postgres-1 psql -U "$RSS_USER" -d "$RSS_DB" -p 1725 < "$rss_dump"; then
         print_success "RSS database restored successfully"
     else
         print_error "Failed to restore RSS database"
