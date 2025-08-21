@@ -28,6 +28,51 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Check if help command is requested
+if [[ "$1" == "help" || "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "Usage: $0 [COMMAND] [IMAGE_TAG] [DEPLOYMENT_DIR]"
+    echo ""
+    echo "Commands:"
+    echo "  down                    Stop all containers"
+    echo "  help, -h, --help        Show this help message"
+    echo "  (no command)            Deploy containers (default)"
+    echo ""
+    echo "Arguments:"
+    echo "  IMAGE_TAG               Docker image tag (default: local)"
+    echo "  DEPLOYMENT_DIR          Deployment directory (default: ./viralogic-deploy)"
+    echo ""
+    echo "Examples:"
+    echo "  $0                      Deploy with default settings"
+    echo "  $0 down                 Stop all containers"
+    echo "  $0 production           Deploy with 'production' image tag"
+    echo "  $0 local /custom/path   Deploy with custom deployment directory"
+    exit 0
+fi
+
+# Check if down command is requested
+if [[ "$1" == "down" ]]; then
+    print_status "🛑 Stopping all containers..."
+    
+    # Stop main application containers
+    print_status "Stopping main application containers..."
+    if docker-compose -f Viralogic/docker-compose-main-local.yml down --remove-orphans; then
+        print_success "Main application containers stopped"
+    else
+        print_warning "Some main application containers may not have stopped cleanly"
+    fi
+    
+    # Stop RSS service containers
+    print_status "Stopping RSS service containers..."
+    if docker-compose -f rss-service/docker-compose-rss-local.yml down --remove-orphans; then
+        print_success "RSS service containers stopped"
+    else
+        print_warning "Some RSS service containers may not have stopped cleanly"
+    fi
+    
+    print_success "🎉 All containers stopped successfully!"
+    exit 0
+fi
+
 # Default values
 IMAGE_TAG=${1:-local}
 DEPLOYMENT_DIR=${2:-./viralogic-deploy}
