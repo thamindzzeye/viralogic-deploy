@@ -5,4 +5,7 @@ ingress:
   - hostname: rss.viralogic.io
     service: http://rss-service:1722
 
+  - hostname: adminer-rss.viralogic.io
+    service: http://rss-adminer:1801
+
   - service: http_status:404

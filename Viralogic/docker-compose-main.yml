@@ -119,7 +119,7 @@ services:
     ports:
       - "1800:1800"
     environment:
-      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DEFAULT_SERVER: postgres:1723
       ADMINER_DESIGN: pepa-linha-dark
     command: php -S 0.0.0.0:1800
     depends_on:

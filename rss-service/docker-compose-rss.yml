@@ -112,7 +112,7 @@ services:
     ports:
       - "1801:1801"
     environment:
-      ADMINER_DEFAULT_SERVER: rss-postgres
+      ADMINER_DEFAULT_SERVER: rss-postgres:1725
       ADMINER_DESIGN: pepa-linha-dark
     command: php -S 0.0.0.0:1801
     depends_on:
