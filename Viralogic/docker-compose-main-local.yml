@@ -113,6 +113,27 @@ services:
       retries: 3
       start_period: 40s
 
+  # Adminer - Database Management Interface
+  adminer:
+    image: adminer:4.8.1
+    ports:
+      - "1800:1800"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: pepa-linha-dark
+    command: php -S 0.0.0.0:1800
+    depends_on:
+      - postgres
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:1800 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   # Cloudflare Tunnel for Main App
   cloudflared-main:
     image: cloudflare/cloudflared:latest

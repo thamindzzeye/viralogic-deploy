@@ -106,6 +106,27 @@ services:
       - rss-service-network
     restart: unless-stopped
 
+  # RSS Service Adminer - Database Management Interface
+  rss-adminer:
+    image: adminer:4.8.1
+    ports:
+      - "1801:1801"
+    environment:
+      ADMINER_DEFAULT_SERVER: rss-postgres
+      ADMINER_DESIGN: pepa-linha-dark
+    command: php -S 0.0.0.0:1801
+    depends_on:
+      - rss-postgres
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:1801 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   # Cloudflare Tunnel for RSS Service
   cloudflared-rss:
     image: cloudflare/cloudflared:latest
