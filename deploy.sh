@@ -215,6 +215,37 @@ else
 fi
 
 # =============================================================================
+# DATABASE MIGRATION PHASE
+# =============================================================================
+print_status "Running database migrations..."
+
+# Wait for services to be ready
+print_status "Waiting for services to be ready..."
+sleep 20
+
+# Run migrations on main application
+print_status "Running main application migrations..."
+if docker-compose -f Viralogic/docker-compose-main.yml exec -T backend python -m alembic upgrade head; then
+    print_success "Main application migrations completed"
+else
+    print_error "Failed to run main application migrations"
+    print_status "Checking migration status..."
+    docker-compose -f Viralogic/docker-compose-main.yml exec -T backend python -m alembic current
+    exit 1
+fi
+
+# Run migrations on RSS service
+print_status "Running RSS service migrations..."
+if docker-compose -f rss-service/docker-compose-rss.yml exec -T rss-service python -m alembic upgrade head; then
+    print_success "RSS service migrations completed"
+else
+    print_error "Failed to run RSS service migrations"
+    print_status "Checking migration status..."
+    docker-compose -f rss-service/docker-compose-rss.yml exec -T rss-service python -m alembic current
+    exit 1
+fi
+
+# =============================================================================
 # HEALTH CHECK PHASE
 # =============================================================================
 print_status "Waiting for services to start..."
