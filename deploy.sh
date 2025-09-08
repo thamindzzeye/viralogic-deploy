@@ -47,10 +47,13 @@ if [[ "$1" == "stop" ]]; then
     print_status "Stopping main application services..."
     docker-compose -f Viralogic/docker-compose-main.yml down --remove-orphans
     
-    print_status "Stopping RSS service..."
-    docker-compose -f rss-service/docker-compose-rss.yml down --remove-orphans
-    
-    print_success "All services stopped successfully!"
+print_status "Stopping RSS service..."
+docker-compose -f rss-service/docker-compose-rss.yml down --remove-orphans
+
+print_status "Stopping Ops service..."
+docker-compose -f ops-service/docker-compose-ops.yml down --remove-orphans
+
+print_success "All services stopped successfully!"
     exit 0
 fi
 
@@ -86,6 +89,11 @@ if [[ ! -f "$SCRIPT_DIR/rss-service/docker-compose-rss.yml" ]]; then
     exit 1
 fi
 
+if [[ ! -f "$SCRIPT_DIR/ops-service/docker-compose-ops.yml" ]]; then
+    print_error "ops-service/docker-compose-ops.yml not found"
+    exit 1
+fi
+
 if [[ ! -f "$SCRIPT_DIR/Viralogic/cloudflared/viralogic-production-tunnel.json" ]]; then
     print_error "Main cloudflare tunnel JSON not found: Viralogic/cloudflared/viralogic-production-tunnel.json"
     print_status "Please create this file with your tunnel credentials"
@@ -94,6 +102,12 @@ fi
 
 if [[ ! -f "$SCRIPT_DIR/rss-service/cloudflared/viralogic-rss-production-tunnel.json" ]]; then
     print_error "RSS cloudflare tunnel JSON not found: rss-service/cloudflared/viralogic-rss-production-tunnel.json"
+    print_status "Please create this file with your tunnel credentials"
+    exit 1
+fi
+
+if [[ ! -f "$SCRIPT_DIR/ops-service/cloudflared/viralogic-ops-production-tunnel.json" ]]; then
+    print_error "Ops cloudflare tunnel JSON not found: ops-service/cloudflared/viralogic-ops-production-tunnel.json"
     print_status "Please create this file with your tunnel credentials"
     exit 1
 fi
@@ -163,6 +177,12 @@ if ! docker pull ghcr.io/$GITHUB_REPOSITORY/rss-service:$IMAGE_TAG; then
     exit 1
 fi
 
+print_status "Pulling Ops service image..."
+if ! docker pull ghcr.io/$GITHUB_REPOSITORY/ops-service:$IMAGE_TAG; then
+    print_error "Failed to pull ops service image"
+    exit 1
+fi
+
 print_success "All images pulled successfully"
 
 # Navigate to script directory
@@ -185,6 +205,13 @@ if docker-compose -f rss-service/docker-compose-rss.yml down --remove-orphans; t
     print_success "RSS service stopped"
 else
     print_warning "Some RSS services may not have stopped cleanly"
+fi
+
+print_status "Stopping Ops service..."
+if docker-compose -f ops-service/docker-compose-ops.yml down --remove-orphans; then
+    print_success "Ops service stopped"
+else
+    print_warning "Some ops services may not have stopped cleanly"
 fi
 
 # Clean up unused Docker resources
@@ -211,6 +238,15 @@ if docker-compose -f rss-service/docker-compose-rss.yml up -d; then
     print_success "RSS service deployed successfully"
 else
     print_error "Failed to deploy RSS service"
+    exit 1
+fi
+
+# Deploy Ops service
+print_status "Deploying Ops service..."
+if docker-compose -f ops-service/docker-compose-ops.yml up -d; then
+    print_success "Ops service deployed successfully"
+else
+    print_error "Failed to deploy ops service"
     exit 1
 fi
 
@@ -289,6 +325,10 @@ check_health "RSS Service" "http://localhost:1722/health/public"
 # Check RSS Flower monitoring
 check_health "RSS Flower" "http://localhost:1727"
 
+# Check Ops service
+check_health "Ops Grafana" "http://localhost:3000/api/health"
+check_health "Ops Loki" "http://localhost:3100/ready"
+
 # =============================================================================
 # FINAL STATUS & SUMMARY
 # =============================================================================
@@ -299,21 +339,28 @@ docker-compose -f Viralogic/docker-compose-main.yml ps --format "table {{.Name}}
 print_status "RSS service:"
 docker-compose -f rss-service/docker-compose-rss.yml ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
 
+print_status "Ops service:"
+docker-compose -f ops-service/docker-compose-ops.yml ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+
 print_success "🎉 Deployment completed successfully!"
 echo ""
 print_status "🌐 Your application is now available at:"
 print_status "  📱 Frontend: https://viralogic.io"
 print_status "  🔌 API: https://api.viralogic.io"
 print_status "  📰 RSS Service: https://rss.viralogic.io"
+print_status "  📊 Ops Dashboard: https://ops.viralogic.io"
 echo ""
 print_status "📋 Useful commands:"
 print_status "  View main app logs: docker-compose -f Viralogic/docker-compose-main.yml logs -f"
 print_status "  View RSS service logs: docker-compose -f rss-service/docker-compose-rss.yml logs -f"
-print_status "  View all services: docker-compose -f Viralogic/docker-compose-main.yml -f rss-service/docker-compose-rss.yml ps"
+print_status "  View Ops service logs: docker-compose -f ops-service/docker-compose-ops.yml logs -f"
+print_status "  View all services: docker-compose -f Viralogic/docker-compose-main.yml -f rss-service/docker-compose-rss.yml -f ops-service/docker-compose-ops.yml ps"
 print_status "  Stop all services: ./deploy.sh stop"
 echo ""
 print_status "🔍 Health check endpoints:"
 print_status "  Backend: https://api.viralogic.io/health"
 print_status "  RSS Service: https://rss.viralogic.io/health/public"
 print_status "  RSS Flower: https://rss.viralogic.io:1727"
+print_status "  Ops Grafana: https://ops.viralogic.io/api/health"
+print_status "  Ops Loki: https://ops.viralogic.io:3100/ready"
 

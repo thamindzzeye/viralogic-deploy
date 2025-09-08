@@ -61,13 +61,21 @@ if [[ "$1" == "down" ]]; then
         print_warning "Some main application containers may not have stopped cleanly"
     fi
     
-    # Stop RSS service containers
-    print_status "Stopping RSS service containers..."
-    if docker-compose -f rss-service/docker-compose-rss-local.yml down --remove-orphans; then
-        print_success "RSS service containers stopped"
-    else
-        print_warning "Some RSS service containers may not have stopped cleanly"
-    fi
+# Stop RSS service containers
+print_status "Stopping RSS service containers..."
+if docker-compose -f rss-service/docker-compose-rss-local.yml down --remove-orphans; then
+    print_success "RSS service containers stopped"
+else
+    print_warning "Some RSS service containers may not have stopped cleanly"
+fi
+
+# Stop Ops service containers
+print_status "Stopping Ops service containers..."
+if docker-compose -f ops-service/docker-compose-ops-local.yml down --remove-orphans; then
+    print_success "Ops service containers stopped"
+else
+    print_warning "Some ops service containers may not have stopped cleanly"
+fi
     
     print_success "🎉 All containers stopped successfully!"
     exit 0
@@ -120,6 +128,11 @@ if [[ ! -f "output/images/rss-service-$IMAGE_TAG.tar.gz" ]]; then
     exit 1
 fi
 
+if [[ ! -f "output/images/ops-service-$IMAGE_TAG.tar.gz" ]]; then
+    print_error "Ops service image not found: output/images/ops-service-$IMAGE_TAG.tar.gz"
+    exit 1
+fi
+
 # Check for required environment files
 print_status "Checking environment files..."
 
@@ -149,6 +162,9 @@ docker load < "output/images/frontend-$IMAGE_TAG.tar.gz"
 print_status "Loading RSS service image..."
 docker load < "output/images/rss-service-$IMAGE_TAG.tar.gz"
 
+print_status "Loading Ops service image..."
+docker load < "output/images/ops-service-$IMAGE_TAG.tar.gz"
+
 print_success "All images loaded successfully!"
 
 # Show loaded images
@@ -167,6 +183,7 @@ print_status "🚀 Deploying containers..."
 print_status "Stopping existing containers..."
 docker-compose -f Viralogic/docker-compose-main-local.yml down --remove-orphans 2>/dev/null || true
 docker-compose -f rss-service/docker-compose-rss-local.yml down --remove-orphans 2>/dev/null || true
+docker-compose -f ops-service/docker-compose-ops-local.yml down --remove-orphans 2>/dev/null || true
 
 # Deploy main application
 print_status "Deploying main application..."
@@ -183,6 +200,15 @@ if docker-compose -f rss-service/docker-compose-rss-local.yml up -d; then
     print_success "RSS service deployed successfully"
 else
     print_error "Failed to deploy RSS service"
+    exit 1
+fi
+
+# Deploy Ops service
+print_status "Deploying Ops service..."
+if docker-compose -f ops-service/docker-compose-ops-local.yml up -d; then
+    print_success "Ops service deployed successfully"
+else
+    print_error "Failed to deploy ops service"
     exit 1
 fi
 
@@ -223,7 +249,7 @@ fi
 
 # Show deployment status
 print_status "📊 Deployment Status:"
-docker-compose -f Viralogic/docker-compose-main-local.yml -f rss-service/docker-compose-rss-local.yml ps
+docker-compose -f Viralogic/docker-compose-main-local.yml -f rss-service/docker-compose-rss-local.yml -f ops-service/docker-compose-ops-local.yml ps
 
 print_success "🎉 Artifact deployment and container startup completed successfully!"
 echo ""
