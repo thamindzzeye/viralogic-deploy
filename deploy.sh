@@ -125,6 +125,12 @@ if [[ ! -f "$SCRIPT_DIR/rss-service/.env" ]]; then
     exit 1
 fi
 
+if [[ ! -f "$SCRIPT_DIR/ops-service/.env" ]]; then
+    print_error "ops-service/.env file not found"
+    print_status "Please create a .env file in the ops-service directory with all required environment variables"
+    exit 1
+fi
+
 print_success "All required files found"
 
 # Authenticate with GitHub Container Registry

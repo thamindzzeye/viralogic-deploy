@@ -148,6 +148,12 @@ if [[ ! -f "rss-service/.env" ]]; then
     exit 1
 fi
 
+if [[ ! -f "ops-service/.env" ]]; then
+    print_error "ops-service/.env file not found"
+    print_status "Please ensure ops-service/.env exists with all required environment variables"
+    exit 1
+fi
+
 print_success "All required files found"
 
 # Load Docker images

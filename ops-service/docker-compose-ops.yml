@@ -24,11 +24,8 @@ services:
     container_name: ops-grafana
     ports:
       - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=${OPS_GRAFANA_PASSWORD:-admin123}
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    env_file:
+      - .env
     volumes:
       - ../../docker_volumes/ops-service/grafana:/var/lib/grafana
       - ./config/grafana/provisioning:/etc/grafana/provisioning
