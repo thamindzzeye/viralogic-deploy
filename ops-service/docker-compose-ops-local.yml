@@ -1,0 +1,79 @@
+services:
+  # Loki - Log aggregation and storage
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: ops-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./config/loki:/etc/loki
+      - ../../docker_volumes/ops-service/loki:/loki
+    networks:
+      - ops-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Grafana - Dashboard and visualization
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: ops-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${OPS_GRAFANA_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - ../../docker_volumes/ops-service/grafana:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - ops-network
+    restart: unless-stopped
+    depends_on:
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Promtail - Log collection agent
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: ops-promtail
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./config/promtail:/etc/promtail
+      - /var/log:/var/log
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - ops-network
+    restart: unless-stopped
+    depends_on:
+      loki:
+        condition: service_healthy
+
+  # Cloudflare Tunnel for Ops Service (Local)
+  cloudflared-ops:
+    image: cloudflare/cloudflared:latest
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    command: tunnel --config /etc/cloudflared/config.yml run viralogic-ops-dev
+    depends_on:
+      - grafana
+    restart: unless-stopped
+    networks:
+      - ops-network
+
+networks:
+  ops-network:
+    driver: bridge
+    name: ops-network

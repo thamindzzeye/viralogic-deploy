@@ -13,6 +13,12 @@ services:
     networks:
       - viralogic-network
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=postgres,logging_stream=stdout"
 
   # Redis Cache
   redis:
@@ -28,6 +34,12 @@ services:
     networks:
       - viralogic-network
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=redis,logging_stream=stdout"
 
   # Backend API
   backend:
@@ -53,6 +65,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=backend,logging_stream=stdout"
 
   # Frontend
   frontend:
@@ -69,6 +87,12 @@ services:
     networks:
       - viralogic-network
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=frontend,logging_stream=stdout"
 
   # Celery Worker
   celeryworker:
@@ -90,6 +114,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=celeryworker,logging_stream=stdout"
 
   # Celery Beat (Scheduler)
   celerybeat:
@@ -112,6 +142,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=celerybeat,logging_stream=stdout"
 
   # Adminer - Database Management Interface
   adminer:
@@ -133,6 +169,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=adminer,logging_stream=stdout"
 
   # Cloudflare Tunnel for Main App
   cloudflared-main:
@@ -146,6 +188,12 @@ services:
     restart: unless-stopped
     networks:
       - viralogic-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=cloudflared,logging_stream=stdout"
 
 networks:
   viralogic-network:

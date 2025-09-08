@@ -13,6 +13,12 @@ services:
     networks:
       - rss-service-network
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-postgres,logging_stream=stdout"
 
   # RSS Service Redis Cache
   rss-redis:
@@ -28,6 +34,12 @@ services:
     networks:
       - rss-service-network
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-redis,logging_stream=stdout"
 
   # RSS Service Main Application
   rss-service:
@@ -45,6 +57,12 @@ services:
     networks:
       - rss-service-network
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-app,logging_stream=stdout"
 
   # RSS Service Celery Worker
   rss-celery-worker:
@@ -66,6 +84,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-celery-worker,logging_stream=stdout"
 
   # RSS Service Celery Beat
   rss-celery-beat:
@@ -88,6 +112,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-celery-beat,logging_stream=stdout"
 
   # RSS Service Flower (Celery Monitoring)
   rss-flower:
@@ -105,6 +135,12 @@ services:
     networks:
       - rss-service-network
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-flower,logging_stream=stdout"
 
   # RSS Service Adminer - Database Management Interface
   rss-adminer:
@@ -126,6 +162,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-adminer,logging_stream=stdout"
 
   # Cloudflare Tunnel for RSS Service
   cloudflared-rss:
@@ -138,6 +180,12 @@ services:
     restart: unless-stopped
     networks:
       - rss-service-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-cloudflared,logging_stream=stdout"
 
 networks:
   rss-service-network:
