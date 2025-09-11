@@ -100,7 +100,7 @@ services:
   # Celery Worker
   celeryworker:
     image: viralogic/backend:local
-    command: celery -A app.celery.celery_app worker --loglevel=info --concurrency=10 -Q celery,auto_post,file_processing,ai_content_generation
+    command: celery -A app.celery.celery_app worker --loglevel=info --concurrency=10 -Q celery,default,file_processing,ai_content_generation,auto_post_processing,schedule_discovery,auto_post_execution,content_generation,maintenance,url_processing
     env_file:
       - .env
     volumes:
