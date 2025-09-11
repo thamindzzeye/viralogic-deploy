@@ -71,6 +71,9 @@ services:
         max-size: "10m"
         max-file: "3"
         labels: "logging_jobname=backend,logging_stream=stdout"
+    labels:
+      - "logging_jobname=backend"
+      - "logging_stream=stdout"
 
   # Frontend
   frontend:

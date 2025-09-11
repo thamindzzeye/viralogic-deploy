@@ -28,9 +28,11 @@ scrape_configs:
       - source_labels: ['__meta_docker_container_label_logging_exclude']
         regex: 'true'
         action: drop
+      # Include ops service logs but with special labeling
       - source_labels: ['__meta_docker_container_name']
         regex: 'ops-.*'
-        action: drop
+        target_label: 'service'
+        replacement: 'ops-service'
       # Add service classification based on container names
       - source_labels: ['__meta_docker_container_name']
         regex: '.*backend.*'
