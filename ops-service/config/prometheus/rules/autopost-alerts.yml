@@ -1,0 +1,105 @@
+groups:
+  - name: autopost_alerts
+    rules:
+      # LinkedIn posting failure rate alert
+      - alert: LinkedInPostingFailureRate
+        expr: |
+          (
+            rate(autopost_linkedin_failures_total[5m]) /
+            rate(autopost_linkedin_attempts_total[5m])
+          ) * 100 > 20
+        for: 2m
+        labels:
+          severity: warning
+          platform: linkedin
+        annotations:
+          summary: "LinkedIn posting failure rate is high"
+          description: "LinkedIn posting failure rate is {{ $value }}% over the last 5 minutes"
+
+      # No successful autoposts in the last hour
+      - alert: NoSuccessfulAutoposts
+        expr: |
+          increase(autopost_success_total[1h]) == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No successful autoposts in the last hour"
+          description: "No successful autoposts have been recorded in the last hour"
+
+      # High autopost processing time
+      - alert: HighAutopostProcessingTime
+        expr: |
+          histogram_quantile(0.95, rate(autopost_processing_duration_seconds_bucket[5m])) > 30
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Autopost processing time is high"
+          description: "95th percentile autopost processing time is {{ $value }}s"
+
+      # LinkedIn authentication failures
+      - alert: LinkedInAuthFailures
+        expr: |
+          rate(autopost_linkedin_auth_failures_total[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: critical
+          platform: linkedin
+        annotations:
+          summary: "LinkedIn authentication failures detected"
+          description: "LinkedIn authentication failure rate is {{ $value }} failures per second"
+
+      # Queue depth too high
+      - alert: AutopostQueueDepth
+        expr: |
+          autopost_queue_depth > 100
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Autopost queue depth is high"
+          description: "Autopost queue depth is {{ $value }} items"
+
+      # Platform-specific failure rates
+      - alert: PlatformFailureRate
+        expr: |
+          (
+            rate(autopost_failures_total{platform="linkedin"}[5m]) /
+            rate(autopost_attempts_total{platform="linkedin"}[5m])
+          ) * 100 > 30
+        for: 3m
+        labels:
+          severity: critical
+          platform: linkedin
+        annotations:
+          summary: "LinkedIn posting failure rate is critical"
+          description: "LinkedIn posting failure rate is {{ $value }}% over the last 5 minutes"
+
+      - alert: PlatformFailureRate
+        expr: |
+          (
+            rate(autopost_failures_total{platform="twitter"}[5m]) /
+            rate(autopost_attempts_total{platform="twitter"}[5m])
+          ) * 100 > 30
+        for: 3m
+        labels:
+          severity: critical
+          platform: twitter
+        annotations:
+          summary: "Twitter posting failure rate is critical"
+          description: "Twitter posting failure rate is {{ $value }}% over the last 5 minutes"
+
+      - alert: PlatformFailureRate
+        expr: |
+          (
+            rate(autopost_failures_total{platform="facebook"}[5m]) /
+            rate(autopost_attempts_total{platform="facebook"}[5m])
+          ) * 100 > 30
+        for: 3m
+        labels:
+          severity: critical
+          platform: facebook
+        annotations:
+          summary: "Facebook posting failure rate is critical"
+          description: "Facebook posting failure rate is {{ $value }}% over the last 5 minutes"
