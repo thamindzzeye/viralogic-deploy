@@ -68,11 +68,10 @@ scrape_configs:
         replacement: 'rss-cache'
     pipeline_stages:
       - docker: {}
-      - timestamp:
-          source: time
-          format: RFC3339
       - drop:
-          older_than: 24h
+          expression: '.*GET /health.*'
+      - drop:
+          expression: '.*health.*HTTP/1\.1.*'
 
   # System logs
   - job_name: system
