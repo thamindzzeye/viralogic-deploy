@@ -30,7 +30,7 @@ print_error() {
 
 # Check if help command is requested
 if [[ "$1" == "help" || "$1" == "-h" || "$1" == "--help" ]]; then
-    echo "Usage: $0 [COMMAND] [IMAGE_TAG] [DEPLOYMENT_DIR]"
+    echo "Usage: $0 [COMMAND] [IMAGE_TAG] [NAS_PATH]"
     echo ""
     echo "Commands:"
     echo "  down                    Stop all containers"
@@ -39,13 +39,13 @@ if [[ "$1" == "help" || "$1" == "-h" || "$1" == "--help" ]]; then
     echo ""
     echo "Arguments:"
     echo "  IMAGE_TAG               Docker image tag (default: local)"
-    echo "  DEPLOYMENT_DIR          Deployment directory (default: ./viralogic-deploy)"
+    echo "  NAS_PATH                NAS path to pull artifacts from (default: /Volumes/Scratch/Viralogic/builds/local)"
     echo ""
     echo "Examples:"
     echo "  $0                      Deploy with default settings"
     echo "  $0 down                 Stop all containers"
     echo "  $0 production           Deploy with 'production' image tag"
-    echo "  $0 local /custom/path   Deploy with custom deployment directory"
+    echo "  $0 local /path/to/nas   Deploy with custom NAS path"
     exit 0
 fi
 
@@ -83,11 +83,11 @@ fi
 
 # Default values
 IMAGE_TAG=${1:-local}
-DEPLOYMENT_DIR=${2:-./viralogic-deploy}
+NAS_PATH=${2:-"/Volumes/Scratch/Viralogic/builds/local"}
 
 print_status "Starting artifact deployment..."
 print_status "Image tag: $IMAGE_TAG"
-print_status "Deployment directory: $DEPLOYMENT_DIR"
+print_status "NAS path: $NAS_PATH"
 
 # Check prerequisites
 print_status "Checking prerequisites..."
@@ -102,14 +102,43 @@ if ! command -v docker-compose &> /dev/null; then
     exit 1
 fi
 
+if ! command -v rsync &> /dev/null; then
+    print_error "rsync is not installed"
+    exit 1
+fi
+
 print_success "Prerequisites check passed"
+
+# Pull artifacts from NAS
+print_status "Pulling artifacts from NAS..."
+
+# Check if NAS path exists
+if [[ ! -d "$NAS_PATH" ]]; then
+    print_error "NAS path does not exist: $NAS_PATH"
+    print_error "Please ensure your NAS is mounted and accessible"
+    exit 1
+fi
+
+# Create local output directory
+print_status "Creating local output directory..."
+mkdir -p "./output"
+
+# Sync artifacts from NAS
+print_status "Syncing artifacts from NAS to local output directory..."
+rsync -avz --progress "$NAS_PATH/" "./output/"
+
+if [ $? -ne 0 ]; then
+    print_error "Failed to sync artifacts from NAS"
+    exit 1
+fi
+
+print_success "Artifacts synced from NAS successfully!"
 
 # Check for required files
 print_status "Checking required files..."
 
 if [[ ! -d "output/images" ]]; then
-    print_error "output/images directory not found"
-    print_status "Please ensure you have copied the output folder to this directory"
+    print_error "output/images directory not found after NAS sync"
     exit 1
 fi
 
