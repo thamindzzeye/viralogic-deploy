@@ -5,6 +5,7 @@ datasources:
     type: loki
     access: proxy
     url: http://loki:1821
+    uid: loki
     isDefault: true
     editable: true
     jsonData:
@@ -15,6 +16,7 @@ datasources:
     type: prometheus
     access: proxy
     url: http://prometheus:1822
+    uid: prometheus
     isDefault: false
     editable: true
     jsonData:
