@@ -35,29 +35,37 @@ scrape_configs:
         replacement: 'ops-service'
       # Add service classification based on container names
       - source_labels: ['__meta_docker_container_name']
-        regex: '.*backend.*'
+        regex: 'viralogic-backend.*'
         target_label: 'service'
         replacement: 'backend'
       - source_labels: ['__meta_docker_container_name']
-        regex: '.*frontend.*'
+        regex: 'viralogic-frontend.*'
         target_label: 'service'
         replacement: 'frontend'
       - source_labels: ['__meta_docker_container_name']
-        regex: '.*rss.*'
+        regex: 'rss-service.*'
         target_label: 'service'
         replacement: 'rss-service'
       - source_labels: ['__meta_docker_container_name']
-        regex: '.*celery.*'
+        regex: 'viralogic-celery.*'
         target_label: 'service'
         replacement: 'celery'
       - source_labels: ['__meta_docker_container_name']
-        regex: '.*postgres.*'
+        regex: 'viralogic-postgres.*'
         target_label: 'service'
         replacement: 'database'
       - source_labels: ['__meta_docker_container_name']
-        regex: '.*redis.*'
+        regex: 'viralogic-redis.*'
         target_label: 'service'
         replacement: 'cache'
+      - source_labels: ['__meta_docker_container_name']
+        regex: 'rss-service-postgres.*'
+        target_label: 'service'
+        replacement: 'rss-database'
+      - source_labels: ['__meta_docker_container_name']
+        regex: 'rss-service-redis.*'
+        target_label: 'service'
+        replacement: 'rss-cache'
     pipeline_stages:
       - docker: {}
 
