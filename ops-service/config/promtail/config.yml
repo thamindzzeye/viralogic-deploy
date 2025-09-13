@@ -6,7 +6,7 @@ positions:
   filename: /tmp/positions.yaml
 
 clients:
-  - url: http://loki:3100/loki/api/v1/push
+  - url: http://loki:1821/loki/api/v1/push
 
 scrape_configs:
   # Docker container logs
@@ -68,6 +68,11 @@ scrape_configs:
         replacement: 'rss-cache'
     pipeline_stages:
       - docker: {}
+      - timestamp:
+          source: time
+          format: RFC3339
+      - drop:
+          older_than: 24h
 
   # System logs
   - job_name: system
