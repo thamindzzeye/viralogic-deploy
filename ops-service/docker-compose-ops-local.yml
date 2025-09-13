@@ -96,6 +96,8 @@ services:
     volumes:
       - ./config/alertmanager:/etc/alertmanager
       - ../../docker_volumes/ops-service/alertmanager:/alertmanager
+    env_file:
+      - .env
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'

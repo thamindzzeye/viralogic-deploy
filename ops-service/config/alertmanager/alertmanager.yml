@@ -1,8 +1,8 @@
 global:
-  smtp_smarthost: 'localhost:587'
-  smtp_from: 'alerts@viralogic.io'
-  smtp_auth_username: 'alerts@viralogic.io'
-  smtp_auth_password: 'your-email-password'
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: '${SMTP_FROM}'
+  smtp_auth_username: '${SMTP_USERNAME}'
+  smtp_auth_password: '${SMTP_PASSWORD}'
 
 route:
   group_by: ['alertname', 'platform']
@@ -28,39 +28,60 @@ receivers:
 
   - name: 'critical-alerts'
     email_configs:
-      - to: 'ops@viralogic.io'
-        title: '[CRITICAL] Viralogic Autopost Alert: {{ .GroupLabels.alertname }}'
-        body: |
-          {{ range .Alerts }}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          Platform: {{ .Labels.platform }}
-          Severity: {{ .Labels.severity }}
-          {{ end }}
+      - to: '${ALERT_EMAIL_TO}'
+        headers:
+          Subject: '[CRITICAL] Viralogic Autopost Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <html>
+            <body>
+              <h2>Critical Autopost Alert</h2>
+              {{ range .Alerts }}
+              <p><strong>Alert:</strong> {{ .Annotations.summary }}</p>
+              <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+              <p><strong>Platform:</strong> {{ .Labels.platform }}</p>
+              <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
+              <hr>
+              {{ end }}
+            </body>
+          </html>
 
   - name: 'warning-alerts'
     email_configs:
-      - to: 'ops@viralogic.io'
-        title: '[WARNING] Viralogic Autopost Alert: {{ .GroupLabels.alertname }}'
-        body: |
-          {{ range .Alerts }}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          Platform: {{ .Labels.platform }}
-          Severity: {{ .Labels.severity }}
-          {{ end }}
+      - to: '${ALERT_EMAIL_TO}'
+        headers:
+          Subject: '[WARNING] Viralogic Autopost Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <html>
+            <body>
+              <h2>Warning Autopost Alert</h2>
+              {{ range .Alerts }}
+              <p><strong>Alert:</strong> {{ .Annotations.summary }}</p>
+              <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+              <p><strong>Platform:</strong> {{ .Labels.platform }}</p>
+              <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
+              <hr>
+              {{ end }}
+            </body>
+          </html>
 
   - name: 'linkedin-alerts'
     email_configs:
-      - to: 'linkedin-ops@viralogic.io'
-        title: '[LinkedIn] Viralogic Autopost Alert: {{ .GroupLabels.alertname }}'
-        body: |
-          {{ range .Alerts }}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          Platform: {{ .Labels.platform }}
-          Severity: {{ .Labels.severity }}
-          {{ end }}
+      - to: '${ALERT_EMAIL_TO}'
+        headers:
+          Subject: '[LinkedIn] Viralogic Autopost Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <html>
+            <body>
+              <h2>LinkedIn Autopost Alert</h2>
+              {{ range .Alerts }}
+              <p><strong>Alert:</strong> {{ .Annotations.summary }}</p>
+              <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+              <p><strong>Platform:</strong> {{ .Labels.platform }}</p>
+              <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
+              <hr>
+              {{ end }}
+            </body>
+          </html>
 
 inhibit_rules:
   - source_match:
