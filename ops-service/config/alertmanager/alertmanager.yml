@@ -29,7 +29,7 @@ receivers:
   - name: 'critical-alerts'
     email_configs:
       - to: 'ops@viralogic.io'
-        subject: '[CRITICAL] Viralogic Autopost Alert: {{ .GroupLabels.alertname }}'
+        title: '[CRITICAL] Viralogic Autopost Alert: {{ .GroupLabels.alertname }}'
         body: |
           {{ range .Alerts }}
           Alert: {{ .Annotations.summary }}
@@ -41,7 +41,7 @@ receivers:
   - name: 'warning-alerts'
     email_configs:
       - to: 'ops@viralogic.io'
-        subject: '[WARNING] Viralogic Autopost Alert: {{ .GroupLabels.alertname }}'
+        title: '[WARNING] Viralogic Autopost Alert: {{ .GroupLabels.alertname }}'
         body: |
           {{ range .Alerts }}
           Alert: {{ .Annotations.summary }}
@@ -53,7 +53,7 @@ receivers:
   - name: 'linkedin-alerts'
     email_configs:
       - to: 'linkedin-ops@viralogic.io'
-        subject: '[LinkedIn] Viralogic Autopost Alert: {{ .GroupLabels.alertname }}'
+        title: '[LinkedIn] Viralogic Autopost Alert: {{ .GroupLabels.alertname }}'
         body: |
           {{ range .Alerts }}
           Alert: {{ .Annotations.summary }}
