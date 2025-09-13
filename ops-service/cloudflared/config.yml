@@ -3,5 +3,5 @@ credentials-file: /etc/cloudflared/viralogic-ops-production-tunnel.json
 
 ingress:
   - hostname: ops.viralogic.io
-    service: http://grafana:3000
+    service: http://grafana:1820
   - service: http_status:404
