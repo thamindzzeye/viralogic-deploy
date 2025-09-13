@@ -25,3 +25,11 @@ scrape_configs:
     metrics_path: '/metrics'
     scrape_interval: 30s
     scrape_timeout: 10s
+
+  # Main Viralogic Backend - Autopost Metrics
+  - job_name: 'viralogic-backend'
+    static_configs:
+      - targets: ['backend:1720']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
