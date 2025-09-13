@@ -24,7 +24,7 @@ services:
     image: grafana/grafana:10.2.0
     container_name: ops-grafana
     ports:
-      - "1820:1820"
+      - "1820:3000"
     env_file:
       - .env
     volumes:
