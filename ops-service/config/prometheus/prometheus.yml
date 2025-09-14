@@ -26,10 +26,20 @@ scrape_configs:
     scrape_interval: 30s
     scrape_timeout: 10s
 
-  # Main Viralogic Backend - Autopost Metrics
+  # Main Viralogic Backend - Autopost Metrics (via API)
   - job_name: 'viralogic-backend'
     static_configs:
-      - targets: ['backend:1720']
+      - targets: ['api.viralogic.io:443']
     metrics_path: '/metrics'
     scrape_interval: 15s
     scrape_timeout: 10s
+    scheme: https
+
+  # RSS Service - RSS Processing Metrics (via API)
+  - job_name: 'viralogic-rss-service'
+    static_configs:
+      - targets: ['rss.viralogic.io:443']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    scheme: https

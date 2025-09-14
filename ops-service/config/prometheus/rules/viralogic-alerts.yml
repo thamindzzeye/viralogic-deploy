@@ -1,0 +1,197 @@
+groups:
+  - name: viralogic-autopost-alerts
+    rules:
+      # Autopost execution failures
+      - alert: AutopostExecutionFailure
+        expr: rate(autopost_execution_details_total{status="failed"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: autopost
+        annotations:
+          summary: "Autopost execution failed"
+          description: "Autopost execution failed for schedule {{ $labels.schedule_id }} on platform {{ $labels.platform }} for org {{ $labels.org_id }}. Error: {{ $labels.error_type }}"
+
+      # High autopost failure rate
+      - alert: HighAutopostFailureRate
+        expr: rate(autopost_execution_details_total{status="failed"}[5m]) / rate(autopost_execution_details_total[5m]) * 100 > 20
+        for: 2m
+        labels:
+          severity: critical
+          service: autopost
+        annotations:
+          summary: "High autopost failure rate"
+          description: "Autopost failure rate is {{ $value }}% for schedule {{ $labels.schedule_id }} on platform {{ $labels.platform }} for org {{ $labels.org_id }}"
+
+      # Schedule health issues
+      - alert: ScheduleUnhealthy
+        expr: schedule_health_status == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: autopost
+        annotations:
+          summary: "Autopost schedule is unhealthy"
+          description: "Schedule {{ $labels.schedule_name }} ({{ $labels.schedule_id }}) is unhealthy for org {{ $labels.org_id }}"
+
+      # Platform posting failures
+      - alert: PlatformPostFailure
+        expr: rate(platform_post_attempts_total{status="failed"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: platform-posting
+        annotations:
+          summary: "Platform post failed"
+          description: "Failed to post to {{ $labels.platform }} for account {{ $labels.account_id }} in org {{ $labels.org_id }}"
+
+  - name: viralogic-ai-service-alerts
+    rules:
+      # AI service failures
+      - alert: AIServiceFailure
+        expr: rate(ai_service_requests_total{status="failed"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: ai-service
+        annotations:
+          summary: "AI service request failed"
+          description: "AI service request failed for model {{ $labels.ai_model }} from provider {{ $labels.service_provider }} for org {{ $labels.org_id }}"
+
+      # High AI service failure rate
+      - alert: HighAIServiceFailureRate
+        expr: rate(ai_service_requests_total{status="failed"}[5m]) / rate(ai_service_requests_total[5m]) * 100 > 10
+        for: 2m
+        labels:
+          severity: critical
+          service: ai-service
+        annotations:
+          summary: "High AI service failure rate"
+          description: "AI service failure rate is {{ $value }}% for model {{ $labels.ai_model }} from provider {{ $labels.service_provider }} for org {{ $labels.org_id }}"
+
+      # AI service slow response
+      - alert: AIServiceSlowResponse
+        expr: histogram_quantile(0.95, rate(ai_service_duration_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+          service: ai-service
+        annotations:
+          summary: "AI service slow response"
+          description: "95th percentile response time for {{ $labels.ai_model }} from {{ $labels.service_provider }} is {{ $value }}s for org {{ $labels.org_id }}"
+
+      # High AI service cost
+      - alert: HighAIServiceCost
+        expr: rate(ai_service_cost_usd_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: ai-service
+        annotations:
+          summary: "High AI service cost"
+          description: "AI service cost rate is ${{ $value }}/5min for model {{ $labels.ai_model }} from {{ $labels.service_provider }} for org {{ $labels.org_id }}"
+
+  - name: viralogic-celery-alerts
+    rules:
+      # Celery task failures
+      - alert: CeleryTaskFailure
+        expr: rate(celery_tasks_total{status="failed"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: celery
+        annotations:
+          summary: "Celery task failed"
+          description: "Celery task {{ $labels.task_name }} failed for org {{ $labels.org_id }}"
+
+      # High Celery task failure rate
+      - alert: HighCeleryTaskFailureRate
+        expr: rate(celery_tasks_total{status="failed"}[5m]) / rate(celery_tasks_total[5m]) * 100 > 15
+        for: 2m
+        labels:
+          severity: critical
+          service: celery
+        annotations:
+          summary: "High Celery task failure rate"
+          description: "Celery task failure rate is {{ $value }}% for task {{ $labels.task_name }} for org {{ $labels.org_id }}"
+
+      # Celery task slow execution
+      - alert: CeleryTaskSlowExecution
+        expr: histogram_quantile(0.95, rate(celery_task_duration_seconds_bucket[5m])) > 300
+        for: 5m
+        labels:
+          severity: warning
+          service: celery
+        annotations:
+          summary: "Celery task slow execution"
+          description: "95th percentile execution time for task {{ $labels.task_name }} is {{ $value }}s for org {{ $labels.org_id }}"
+
+  - name: viralogic-rss-service-alerts
+    rules:
+      # RSS service failures
+      - alert: RSSServiceFailure
+        expr: rate(rss_service_requests_total{status_code=~"5.."}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: rss-service
+        annotations:
+          summary: "RSS service error"
+          description: "RSS service returned {{ $labels.status_code }} for endpoint {{ $labels.endpoint }}"
+
+      # RSS feed processing failures
+      - alert: RSSFeedProcessingFailure
+        expr: rate(rss_entries_fetched_total{status="failed"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: rss-service
+        annotations:
+          summary: "RSS feed processing failed"
+          description: "Failed to process RSS entries from source {{ $labels.source_id }} for org {{ $labels.org_id }}"
+
+      # RSS feed health issues
+      - alert: RSSFeedUnhealthy
+        expr: rss_feed_health_status == 0
+        for: 10m
+        labels:
+          severity: warning
+          service: rss-service
+        annotations:
+          summary: "RSS feed is unhealthy"
+          description: "RSS feed {{ $labels.feed_url }} is unhealthy for source {{ $labels.source_id }} in org {{ $labels.org_id }}"
+
+  - name: viralogic-system-alerts
+    rules:
+      # Service down
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Service is down"
+          description: "Service {{ $labels.job }} is down"
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High error rate"
+          description: "Error rate is {{ $value }}% for service {{ $labels.job }}"
+
+      # High response time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High response time"
+          description: "95th percentile response time is {{ $value }}s for service {{ $labels.job }}"

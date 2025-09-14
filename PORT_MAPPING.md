@@ -7,6 +7,7 @@ This document outlines all port mappings for the Viralogic platform deployment.
 - **1720-1724**: Main application services
 - **1725-1729**: RSS service (standalone microservice)
 - **1800-1809**: Monitoring and management tools
+- **1820-1829**: Ops service (monitoring, logging, metrics)
 - **External ports = Internal ports** for all services
 
 ## Main Application (`docker-compose-main.yml`)
@@ -45,6 +46,25 @@ This document outlines all port mappings for the Viralogic platform deployment.
 - RSS Flower → RSS Redis: `rss-redis:1726`
 - RSS Adminer → RSS PostgreSQL: `rss-postgres:1725`
 
+## Ops Service (`docker-compose-ops.yml`)
+
+| Service | External Port | Internal Port | Description |
+|---------|---------------|---------------|-------------|
+| Grafana | 1820 | 1820 | Monitoring dashboards |
+| Loki | 1821 | 1821 | Log aggregation |
+| Prometheus | 1822 | 1822 | Metrics collection |
+| AlertManager | 1823 | 1823 | Alert handling |
+| Monitoring Gateway | 1825 | 1825 | Centralized monitoring API |
+
+### Internal Communication
+- Grafana → Loki: `loki:1821`
+- Grafana → Prometheus: `prometheus:1822`
+- Prometheus → Backend: `backend:1720` (via external network)
+- Prometheus → RSS Service: `rss-service:1722` (via external network)
+- Promtail → Loki: `loki:1821`
+- Monitoring Gateway → All Services: HTTP calls to external URLs
+- Monitoring Gateway → Loki: `loki:1821`
+
 ## Cloudflare Tunnel Configuration
 
 ### Main Application Tunnel
@@ -55,6 +75,14 @@ This document outlines all port mappings for the Viralogic platform deployment.
 ### RSS Service Tunnel
 - **Tunnel Name**: `viralogic-rss-production`
 - **Domain**: `rss.viralogic.io` → `http://rss-service:1722`
+
+### Ops Service Tunnel
+- **Tunnel Name**: `viralogic-ops-production`
+- **Domain**: `ops.viralogic.io` → `http://grafana:1820` (default)
+- **Domain**: `ops.viralogic.io/api/monitoring/*` → `http://monitoring-gateway:1825`
+- **Domain**: `ops.viralogic.io/health` → `http://monitoring-gateway:1825`
+- **Domain**: `ops.viralogic.io/prometheus/*` → `http://prometheus:1822`
+- **Domain**: `ops.viralogic.io/loki/*` → `http://loki:1821`
 
 ## Health Check Endpoints
 
