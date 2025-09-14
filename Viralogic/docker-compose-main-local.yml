@@ -60,7 +60,7 @@ services:
       - viralogic-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import requests; requests.get('http://0.0.0.0:1720/health')\" || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import requests; requests.get('http://localhost:1720/health')\" || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -71,9 +71,6 @@ services:
         max-size: "10m"
         max-file: "3"
         labels: "logging_jobname=backend,logging_stream=stdout"
-    labels:
-      - "logging_jobname=backend"
-      - "logging_stream=stdout"
 
   # Frontend
   frontend:
