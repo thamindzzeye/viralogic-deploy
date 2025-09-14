@@ -4,22 +4,22 @@ credentials-file: /etc/cloudflared/viralogic-ops-production-tunnel.json
 ingress:
   # Viralogic Ops Service - Centralized API (default route)
   - hostname: ops.viralogic.io
-    service: http://viralogic-ops:1825
+    service: http://ops-viralogic-ops:1825
   
   # Grafana dashboards (alternative access)
   - hostname: ops.viralogic.io
     path: /grafana/*
-    service: http://grafana:1820
+    service: http://ops-grafana:3000
   
   # Direct Prometheus access (for advanced users)
   - hostname: ops.viralogic.io
     path: /prometheus/*
-    service: http://prometheus:1822
+    service: http://ops-prometheus:1822
   
   # Direct Loki access (for advanced users)
   - hostname: ops.viralogic.io
     path: /loki/*
-    service: http://loki:1821
+    service: http://ops-loki:1821
   
   # Default fallback
   - service: http_status:404
