@@ -2,24 +2,44 @@ tunnel: viralogic-ops-production
 credentials-file: /etc/cloudflared/viralogic-ops-production-tunnel.json
 
 ingress:
-  # Viralogic Ops Service - Centralized API (default route)
+  # Unified Monitoring Hub - Beautiful UI (highest priority)
   - hostname: ops.viralogic.io
+    path: /
     service: http://ops-viralogic-ops:1825
   
-  # Grafana dashboards (alternative access)
+  # Grafana dashboards - Visual analytics
   - hostname: ops.viralogic.io
     path: /grafana/*
     service: http://ops-grafana:3000
   
-  # Direct Prometheus access (for advanced users)
+  # Prometheus metrics - Data collection
   - hostname: ops.viralogic.io
     path: /prometheus/*
     service: http://ops-prometheus:1822
   
-  # Direct Loki access (for advanced users)
+  # Loki logs - Log aggregation
   - hostname: ops.viralogic.io
     path: /loki/*
     service: http://ops-loki:1821
+  
+  # AlertManager - Alert management
+  - hostname: ops.viralogic.io
+    path: /alerts/*
+    service: http://ops-alertmanager:1823
+  
+  # Ops Service API - Programmatic access
+  - hostname: ops.viralogic.io
+    path: /api/*
+    service: http://ops-viralogic-ops:1825
+  
+  # Health and metrics endpoints
+  - hostname: ops.viralogic.io
+    path: /health
+    service: http://ops-viralogic-ops:1825
+  
+  - hostname: ops.viralogic.io
+    path: /metrics
+    service: http://ops-viralogic-ops:1825
   
   # Default fallback
   - service: http_status:404
