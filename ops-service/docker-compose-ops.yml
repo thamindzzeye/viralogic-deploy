@@ -127,16 +127,6 @@ services:
       - "1825:1825"
     env_file:
       - .env
-    environment:
-      - AI_MONITORING_API_KEY=${AI_MONITORING_API_KEY}
-      - BACKEND_URL=${BACKEND_URL:-https://api.viralogic.io}
-      - FRONTEND_URL=${FRONTEND_URL:-https://viralogic.io}
-      - RSS_SERVICE_URL=${RSS_SERVICE_URL:-https://rss.viralogic.io}
-      - LOKI_URL=http://ops-loki:1821
-      - LOKI_USERNAME=${LOKI_USERNAME}
-      - LOKI_PASSWORD=${LOKI_PASSWORD}
-      - MAX_LOG_LIMIT=${MAX_LOG_LIMIT:-1000}
-      - MAX_HOURS_LOOKBACK=${MAX_HOURS_LOOKBACK:-24}
     depends_on:
       - loki
       - grafana
