@@ -167,4 +167,4 @@ networks:
     name: ops-network
   viralogic-network:
     external: true
-    name: viralogic-network
+    name: viralogic-main-network

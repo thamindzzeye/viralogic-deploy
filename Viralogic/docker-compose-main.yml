@@ -198,3 +198,4 @@ services:
 networks:
   viralogic-network:
     driver: bridge
+    name: viralogic-main-network
