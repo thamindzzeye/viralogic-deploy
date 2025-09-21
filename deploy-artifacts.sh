@@ -189,16 +189,44 @@ print_success "All required files found"
 print_status "Loading Docker images..."
 
 print_status "Loading backend image..."
-docker load < "output/images/backend-$IMAGE_TAG.tar.gz"
+print_status "Image file size: $(ls -lh output/images/backend-$IMAGE_TAG.tar.gz | awk '{print $5}')"
+if timeout 300 docker load < "output/images/backend-$IMAGE_TAG.tar.gz"; then
+    print_success "Backend image loaded successfully"
+else
+    print_error "Failed to load backend image"
+    print_status "Checking if image file exists and is valid..."
+    if [[ ! -f "output/images/backend-$IMAGE_TAG.tar.gz" ]]; then
+        print_error "Backend image file not found: output/images/backend-$IMAGE_TAG.tar.gz"
+        exit 1
+    fi
+    print_status "Image file size: $(ls -lh output/images/backend-$IMAGE_TAG.tar.gz | awk '{print $5}')"
+    print_status "Image file type: $(file output/images/backend-$IMAGE_TAG.tar.gz)"
+    exit 1
+fi
 
 print_status "Loading frontend image..."
-docker load < "output/images/frontend-$IMAGE_TAG.tar.gz"
+if docker load < "output/images/frontend-$IMAGE_TAG.tar.gz"; then
+    print_success "Frontend image loaded successfully"
+else
+    print_error "Failed to load frontend image"
+    exit 1
+fi
 
 print_status "Loading RSS service image..."
-docker load < "output/images/rss-service-$IMAGE_TAG.tar.gz"
+if docker load < "output/images/rss-service-$IMAGE_TAG.tar.gz"; then
+    print_success "RSS service image loaded successfully"
+else
+    print_error "Failed to load RSS service image"
+    exit 1
+fi
 
 print_status "Loading Ops service image..."
-docker load < "output/images/ops-service-$IMAGE_TAG.tar.gz"
+if docker load < "output/images/ops-service-$IMAGE_TAG.tar.gz"; then
+    print_success "Ops service image loaded successfully"
+else
+    print_error "Failed to load Ops service image"
+    exit 1
+fi
 
 print_success "All images loaded successfully!"
 
