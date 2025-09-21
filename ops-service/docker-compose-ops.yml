@@ -156,7 +156,7 @@ services:
   # Viralogic Ops Service - Centralized Monitoring (GIT BUILD)
   viralogic-ops:
     build:
-      context: ../Viralogic/micro-services/ops-service
+      context: ../../Viralogic/micro-services/ops-service
       dockerfile: Dockerfile
     container_name: ops-viralogic-ops
     ports:

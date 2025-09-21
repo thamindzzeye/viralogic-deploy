@@ -2,34 +2,29 @@ tunnel: viralogic-ops-production
 credentials-file: /etc/cloudflared/viralogic-ops-production-tunnel.json
 
 ingress:
-  # Unified Monitoring Hub - Beautiful UI (highest priority)
+  # Grafana dashboards - Visual analytics (highest priority for /grafana)
   - hostname: ops.viralogic.io
-    path: /
-    service: http://ops-viralogic-ops:1825
-  
-  # Grafana dashboards - Visual analytics
-  - hostname: ops.viralogic.io
-    path: /grafana/*
+    path: /grafana
     service: http://ops-grafana:3000
   
-  # Prometheus metrics - Data collection
+  # Prometheus metrics - Data collection (highest priority for /prometheus)
   - hostname: ops.viralogic.io
-    path: /prometheus/*
+    path: /prometheus
     service: http://ops-prometheus:1822
   
-  # Loki logs - Log aggregation
+  # Loki logs - Log aggregation (highest priority for /loki)
   - hostname: ops.viralogic.io
-    path: /loki/*
+    path: /loki
     service: http://ops-loki:1821
   
-  # AlertManager - Alert management
+  # AlertManager - Alert management (highest priority for /alerts)
   - hostname: ops.viralogic.io
-    path: /alerts/*
+    path: /alerts
     service: http://ops-alertmanager:1823
   
-  # Ops Service API - Programmatic access
+  # Ops Service API - Programmatic access (highest priority for /api)
   - hostname: ops.viralogic.io
-    path: /api/*
+    path: /api
     service: http://ops-viralogic-ops:1825
   
   # Health and metrics endpoints
@@ -39,6 +34,11 @@ ingress:
   
   - hostname: ops.viralogic.io
     path: /metrics
+    service: http://ops-viralogic-ops:1825
+  
+  # Unified Monitoring Hub - Beautiful UI (fallback for root)
+  - hostname: ops.viralogic.io
+    path: /
     service: http://ops-viralogic-ops:1825
   
   # Default fallback
