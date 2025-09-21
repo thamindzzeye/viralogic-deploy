@@ -190,10 +190,44 @@ print_status "Loading Docker images..."
 
 print_status "Loading backend image..."
 print_status "Image file size: $(ls -lh output/images/backend-$IMAGE_TAG.tar.gz | awk '{print $5}')"
+
+# Check Docker daemon status
+print_status "Checking Docker daemon status..."
+if ! docker info > /dev/null 2>&1; then
+    print_error "Docker daemon is not running or not accessible"
+    exit 1
+fi
+
+# Check available disk space
+print_status "Checking available disk space..."
+df -h /var/lib/docker 2>/dev/null || df -h /tmp
+
+# Try to load with progress monitoring
+print_status "Starting backend image load (this may take several minutes for 790M image)..."
+print_status "Monitoring Docker load progress..."
+
+# Use a background process to monitor progress
+(
+    while true; do
+        sleep 10
+        if pgrep -f "docker load" > /dev/null; then
+            print_status "Docker load still in progress... (checking every 10s)"
+        else
+            break
+        fi
+    done
+) &
+MONITOR_PID=$!
+
+# Load the image
 if docker load < "output/images/backend-$IMAGE_TAG.tar.gz"; then
+    kill $MONITOR_PID 2>/dev/null || true
     print_success "Backend image loaded successfully"
 else
+    kill $MONITOR_PID 2>/dev/null || true
     print_error "Failed to load backend image"
+    print_status "Checking Docker daemon logs..."
+    docker system df
     print_status "Checking if image file exists and is valid..."
     if [[ ! -f "output/images/backend-$IMAGE_TAG.tar.gz" ]]; then
         print_error "Backend image file not found: output/images/backend-$IMAGE_TAG.tar.gz"
@@ -201,6 +235,8 @@ else
     fi
     print_status "Image file size: $(ls -lh output/images/backend-$IMAGE_TAG.tar.gz | awk '{print $5}')"
     print_status "Image file type: $(file output/images/backend-$IMAGE_TAG.tar.gz)"
+    print_status "Docker system info:"
+    docker system df
     exit 1
 fi
 

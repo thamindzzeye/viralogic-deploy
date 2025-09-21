@@ -1,11 +1,47 @@
 services:
+  # PostgreSQL Database for Ops Service
+  ops_db:
+    image: postgres:15-alpine
+    container_name: ops-db
+    environment:
+      POSTGRES_DB: ops_monitoring
+      POSTGRES_USER: ops_user
+      POSTGRES_PASSWORD: ops_password
+    volumes:
+      - ../../docker_volumes/ops-service/postgres:/var/lib/postgresql/data
+    networks:
+      - ops-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ops_user -d ops_monitoring"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Redis for Ops Service
+  redis:
+    image: redis:7-alpine
+    container_name: ops-redis
+    volumes:
+      - ../../docker_volumes/ops-service/redis:/data
+    networks:
+      - ops-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
   # Loki - Log aggregation and storage
   loki:
     image: grafana/loki:2.9.0
     container_name: ops-loki
     ports:
       - "1821:1821"
-    command: -config.file=/etc/loki/local-config.yaml -server.http-listen-port=1821
+    command: -config.file=/etc/loki/local-config.yaml -server.http-listen-port=1821                                                                             
     volumes:
       - ./config/loki:/etc/loki
       - ../../docker_volumes/ops-service/loki:/loki
@@ -13,7 +49,7 @@ services:
       - ops-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:1821/ready || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:1821/ready || exit 1"]                                                         
       interval: 30s
       timeout: 15s
       retries: 5
@@ -39,7 +75,7 @@ services:
       loki:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]                                                    
       interval: 30s
       timeout: 15s
       retries: 5
@@ -83,7 +119,7 @@ services:
       - ops-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:1822/-/healthy || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:1822/-/healthy || exit 1"]                                                     
       interval: 30s
       timeout: 15s
       retries: 5
@@ -111,16 +147,16 @@ services:
     depends_on:
       - prometheus
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:1823/-/healthy || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:1823/-/healthy || exit 1"]                                                     
       interval: 30s
       timeout: 15s
       retries: 5
       start_period: 60s
 
-  # Viralogic Ops Service - Centralized Monitoring
+  # Viralogic Ops Service - Centralized Monitoring (GIT BUILD)
   viralogic-ops:
     build:
-      context: ./viralogic-ops
+      context: ../Viralogic/micro-services/ops-service
       dockerfile: Dockerfile
     container_name: ops-viralogic-ops
     ports:
@@ -128,9 +164,16 @@ services:
     env_file:
       - .env
     depends_on:
-      - loki
-      - grafana
-      - prometheus
+      ops_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      grafana:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
     networks:
       - ops-network
     restart: unless-stopped
@@ -152,7 +195,7 @@ services:
     image: cloudflare/cloudflared:latest
     volumes:
       - ./cloudflared:/etc/cloudflared
-    command: tunnel --config /etc/cloudflared/config.yml run viralogic-ops-production
+    command: tunnel --config /etc/cloudflared/config.yml run viralogic-ops-production                                                                           
     depends_on:
       - grafana
       - viralogic-ops
@@ -167,4 +210,4 @@ networks:
     name: ops-network
   viralogic-network:
     external: true
-    name: viralogic-main-network
+    name: viralogic-network
