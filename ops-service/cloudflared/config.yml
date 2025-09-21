@@ -2,27 +2,23 @@ tunnel: viralogic-ops-production
 credentials-file: /etc/cloudflared/viralogic-ops-production-tunnel.json
 
 ingress:
-  # Grafana dashboards - Visual analytics (highest priority for /grafana)
-  - hostname: ops.viralogic.io
-    path: /grafana
+  # Grafana dashboards - Visual analytics
+  - hostname: ops-grafana.viralogic.io
     service: http://ops-grafana:3000
   
-  # Prometheus metrics - Data collection (highest priority for /prometheus)
-  - hostname: ops.viralogic.io
-    path: /prometheus
+  # Prometheus metrics - Data collection
+  - hostname: ops-prometheus.viralogic.io
     service: http://ops-prometheus:1822
   
-  # Loki logs - Log aggregation (highest priority for /loki)
-  - hostname: ops.viralogic.io
-    path: /loki
+  # Loki logs - Log aggregation
+  - hostname: ops-loki.viralogic.io
     service: http://ops-loki:1821
   
-  # AlertManager - Alert management (highest priority for /alerts)
-  - hostname: ops.viralogic.io
-    path: /alerts
+  # AlertManager - Alert management
+  - hostname: ops-alerts.viralogic.io
     service: http://ops-alertmanager:1823
   
-  # Ops Service API - Programmatic access (highest priority for /api)
+  # Ops Service API - Programmatic access
   - hostname: ops.viralogic.io
     path: /api
     service: http://ops-viralogic-ops:1825
