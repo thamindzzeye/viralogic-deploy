@@ -190,7 +190,7 @@ print_status "Loading Docker images..."
 
 print_status "Loading backend image..."
 print_status "Image file size: $(ls -lh output/images/backend-$IMAGE_TAG.tar.gz | awk '{print $5}')"
-if timeout 300 docker load < "output/images/backend-$IMAGE_TAG.tar.gz"; then
+if docker load < "output/images/backend-$IMAGE_TAG.tar.gz"; then
     print_success "Backend image loaded successfully"
 else
     print_error "Failed to load backend image"
