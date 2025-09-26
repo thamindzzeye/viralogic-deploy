@@ -1,0 +1,97 @@
+services:
+  # RSS Service PostgreSQL Database
+  rss-postgres:
+    image: postgres:15-alpine
+    container_name: rss-postgres-staging
+    env_file:
+      - .env
+    command: postgres -p 1725
+    volumes:
+      - ../../docker_volumes/rss-service/postgres:/var/lib/postgresql/data
+      - ../../docker_volumes_nobackup/rss-service/postgres:/tmp
+    ports:
+      - "1725:1725"
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-postgres-staging,logging_stream=stdout"
+
+  # RSS Service Redis Cache
+  rss-redis:
+    image: redis:7-alpine
+    container_name: rss-redis-staging
+    env_file:
+      - .env
+    command: sh -c "redis-server --port 1726 --requirepass $$REDIS_PASSWORD --appendonly yes --dir /data"
+    volumes:
+      - ../../docker_volumes/rss-service/redis:/data
+      - ../../docker_volumes_nobackup/rss-service/redis:/tmp
+    ports:
+      - "1726:1726"
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-redis-staging,logging_stream=stdout"
+
+  # RSS Service - STAGING with hot reload
+  rss-service:
+    build:
+      context: ../Viralogic/rss-service
+      dockerfile: Dockerfile.dev
+    container_name: rss-service-staging
+    ports:
+      - "1722:1722"
+    env_file:
+      - .env
+    volumes:
+      # HOT RELOAD: Mount source code for instant changes
+      - ../Viralogic/rss-service:/app
+      - ../../docker_volumes_nobackup/rss-service/logs:/logs
+    depends_on:
+      - rss-postgres
+      - rss-redis
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-service-staging,logging_stream=stdout"
+
+  # Cloudflare Tunnel for RSS Service
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: rss-cloudflared-staging
+    env_file:
+      - .env
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    command: tunnel --config /etc/cloudflared/config.yml run rss-service-staging
+    depends_on:
+      - rss-service
+    restart: unless-stopped
+    networks:
+      - rss-service-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-cloudflared-staging,logging_stream=stdout"
+
+networks:
+  rss-service-network:
+    name: rss-service-network-staging
+    driver: bridge

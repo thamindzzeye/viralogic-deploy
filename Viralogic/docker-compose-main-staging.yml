@@ -1,0 +1,202 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: viralogic-postgres-staging
+    env_file:
+      - .env
+    command: postgres -p 1723
+    volumes:
+      - ../../docker_volumes/viralogic/postgres:/data
+      - ../../docker_volumes_nobackup/viralogic/postgres:/tmp
+    ports:
+      - "1723:1723"
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=postgres-staging,logging_stream=stdout"
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: viralogic-redis-staging
+    env_file:
+      - .env
+    command: sh -c "redis-server --port 1724 --requirepass $$REDIS_PASSWORD --appendonly yes --dir /data"
+    volumes:
+      - ../../docker_volumes/viralogic/redis:/data
+      - ../../docker_volumes_nobackup/viralogic/redis:/tmp
+    ports:
+      - "1724:1724"
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=redis-staging,logging_stream=stdout"
+
+  # Backend API - STAGING with hot reload
+  backend:
+    build:
+      context: ../Viralogic/backend
+      dockerfile: Dockerfile.dev
+    container_name: viralogic-backend-staging
+    env_file:
+      - .env
+    ports:
+      - "1720:1720"
+    volumes:
+      # HOT RELOAD: Mount source code for instant changes
+      - ../Viralogic/backend:/app
+      - ../../docker_volumes_nobackup/viralogic/logs:/logs
+      - ../../docker_volumes_nobackup:/temp
+      - ../../docker_volumes:/files
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 1720
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=backend-staging,logging_stream=stdout"
+
+  # Frontend - STAGING with hot reload
+  frontend:
+    build:
+      context: ../Viralogic/frontend
+      dockerfile: Dockerfile.dev
+    container_name: viralogic-frontend-staging
+    env_file:
+      - .env
+    ports:
+      - "1721:1721"
+    volumes:
+      # HOT RELOAD: Mount source code for instant changes
+      - ../Viralogic/frontend:/app
+      - ../../docker_volumes_nobackup/viralogic/logs:/logs
+    command: npm run dev -- --port 1721
+    depends_on:
+      - backend
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=frontend-staging,logging_stream=stdout"
+
+  # Celery Worker - STAGING with hot reload
+  celeryworker:
+    build:
+      context: ../Viralogic/backend
+      dockerfile: Dockerfile.dev
+    container_name: viralogic-celeryworker-staging
+    command: celery -A app.celery.celery_app worker --loglevel=info --concurrency=10 -Q celery,default,file_processing,ai_content_generation,auto_post_processing,schedule_discovery,auto_post_execution,content_generation,maintenance,url_processing
+    env_file:
+      - .env
+    volumes:
+      # HOT RELOAD: Mount source code for instant changes
+      - ../Viralogic/backend:/app
+      - ../../docker_volumes_nobackup/viralogic/logs:/logs
+    depends_on:
+      - redis
+      - backend
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=celeryworker-staging,logging_stream=stdout"
+
+  # Celery Beat - STAGING with hot reload
+  celerybeat:
+    build:
+      context: ../Viralogic/backend
+      dockerfile: Dockerfile.dev
+    container_name: viralogic-celerybeat-staging
+    command: celery -A app.celery.celery_app beat --loglevel=info --schedule=/app/celerybeat-data/celerybeat-schedule
+    env_file:
+      - .env
+    volumes:
+      # HOT RELOAD: Mount source code for instant changes
+      - ../Viralogic/backend:/app
+      - ../../docker_volumes_nobackup/viralogic/logs:/logs
+      - ../../docker_volumes_nobackup/viralogic-celerybeat:/app/celerybeat-data
+    depends_on:
+      - redis
+      - backend
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=celerybeat-staging,logging_stream=stdout"
+
+  # Flower - Celery monitoring
+  flower:
+    image: mher/flower:2.0.1
+    container_name: viralogic-flower-staging
+    ports:
+      - "5555:5555"
+    volumes:
+      - ../../docker_volumes_nobackup/viralogic-flower:/data
+    depends_on:
+      - redis
+      - celeryworker
+    networks:
+      - viralogic-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=flower-staging,logging_stream=stdout"
+
+  # Cloudflare Tunnel
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: viralogic-cloudflared-staging
+    env_file:
+      - .env
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    command: tunnel --config /etc/cloudflared/config.yml run viralogic-staging
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - viralogic-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=cloudflared-staging,logging_stream=stdout"
+
+networks:
+  viralogic-network:
+    name: viralogic-network-staging
+    driver: bridge

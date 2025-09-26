@@ -1,0 +1,165 @@
+services:
+  # PostgreSQL Database for Ops Service
+  ops_db:
+    image: postgres:15-alpine
+    container_name: ops-db-staging
+    environment:
+      POSTGRES_DB: ops_monitoring
+      POSTGRES_USER: ops_user
+      POSTGRES_PASSWORD: ops_password
+    volumes:
+      - ../../docker_volumes/ops-service/postgres:/var/lib/postgresql/data
+    networks:
+      - ops-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ops_user -d ops_monitoring"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Redis for Ops Service
+  redis:
+    image: redis:7-alpine
+    container_name: ops-redis-staging
+    volumes:
+      - ../../docker_volumes/ops-service/redis:/data
+    networks:
+      - ops-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Loki - Log aggregation and storage
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: ops-loki-staging
+    ports:
+      - "1821:1821"
+    command: -config.file=/etc/loki/local-config.yaml -server.http-listen-port=1821
+    volumes:
+      - ./config/loki:/etc/loki
+      - ../../docker_volumes/ops-service/loki:/loki
+    networks:
+      - ops-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:1821/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Prometheus - Metrics collection
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: ops-prometheus-staging
+    ports:
+      - "1822:1822"
+    volumes:
+      - ../../docker_volumes/ops-service/prometheus:/prometheus
+      - ./config/prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--web.listen-address=0.0.0.0:1822'
+    networks:
+      - ops-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:1822/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Grafana - Monitoring dashboards
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: ops-grafana-staging
+    ports:
+      - "1820:1820"
+    environment:
+      - GF_SERVER_HTTP_PORT=1820
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_SECRET_KEY=SW2YcwTIb9zpOOhoPsMm
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_USERS_ALLOW_ORG_CREATE=false
+      - GF_USERS_AUTO_ASSIGN_ORG=true
+      - GF_USERS_AUTO_ASSIGN_ORG_ROLE=Viewer
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_NAME=Main Org.
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_LOG_LEVEL=info
+      - GF_METRICS_ENABLED=true
+    volumes:
+      - ../../docker_volumes/ops-service/grafana:/var/lib/grafana
+      - ./config/grafana:/etc/grafana
+    networks:
+      - ops-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:1820/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Ops Service - STAGING with hot reload
+  ops-service:
+    build:
+      context: ../Viralogic/micro-services/ops-service
+      dockerfile: Dockerfile.dev
+    container_name: ops-service-staging
+    ports:
+      - "1825:1825"
+    environment:
+      - AI_MONITORING_API_KEY=${AI_MONITORING_API_KEY:-viralogic-ai-uuqrOYQxuXlCGyYoz3uePzLEUwuaPaHLRlhG6IUgBmI}
+      - BACKEND_URL=http://backend:1720
+      - FRONTEND_URL=http://frontend:1721
+      - RSS_SERVICE_URL=http://rss-service:1722
+      - LOKI_URL=http://loki:1821
+      - LOKI_USERNAME=${LOKI_USERNAME:-admin}
+      - LOKI_PASSWORD=${LOKI_PASSWORD:-admin}
+      - MAX_LOG_LIMIT=${MAX_LOG_LIMIT:-1000}
+      - MAX_HOURS_LOOKBACK=${MAX_HOURS_LOOKBACK:-24}
+      - OPS_DATABASE_URL=postgresql://ops_user:ops_password@ops_db:5432/ops_monitoring
+      - DATABASE_URL=postgresql://ops_user:ops_password@ops_db:5432/ops_monitoring
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+    volumes:
+      # HOT RELOAD: Mount source code for instant changes
+      - ../Viralogic/micro-services/ops-service:/app
+      - ../../docker_volumes/ops-service/logs:/app/logs
+    depends_on:
+      - ops_db
+      - redis
+      - loki
+      - prometheus
+      - grafana
+    networks:
+      - ops-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:1825/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  ops-network:
+    name: ops-network-staging
+    driver: bridge
