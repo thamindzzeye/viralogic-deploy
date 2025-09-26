@@ -46,7 +46,7 @@ services:
   # RSS Service - STAGING with hot reload
   rss-service:
     build:
-      context: ../Viralogic/rss-service
+      context: ../../Viralogic/micro-services/rss-service
       dockerfile: Dockerfile.dev
     container_name: rss-service-staging
     ports:
@@ -55,7 +55,7 @@ services:
       - .env
     volumes:
       # HOT RELOAD: Mount source code for instant changes
-      - ../Viralogic/rss-service:/app
+      - ../../Viralogic/micro-services/rss-service:/app
       - ../../docker_volumes_nobackup/rss-service/logs:/logs
     depends_on:
       - rss-postgres
@@ -69,6 +69,105 @@ services:
         max-size: "10m"
         max-file: "3"
         labels: "logging_jobname=rss-service-staging,logging_stream=stdout"
+
+  # RSS Service Celery Worker - STAGING with hot reload
+  rss-celery-worker:
+    build:
+      context: ../../Viralogic/micro-services/rss-service
+      dockerfile: Dockerfile.dev
+    container_name: rss-celery-worker-staging
+    env_file:
+      - .env
+    command: celery -A app.celery.celery_app worker --loglevel=info
+    volumes:
+      # HOT RELOAD: Mount source code for instant changes
+      - ../../Viralogic/micro-services/rss-service:/app
+      - ../../docker_volumes_nobackup/rss-service/logs:/logs
+    depends_on:
+      - rss-postgres
+      - rss-redis
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-celery-worker-staging,logging_stream=stdout"
+
+  # RSS Service Celery Beat - STAGING with hot reload
+  rss-celery-beat:
+    build:
+      context: ../../Viralogic/micro-services/rss-service
+      dockerfile: Dockerfile.dev
+    container_name: rss-celery-beat-staging
+    env_file:
+      - .env
+    command: celery -A app.celery.celery_app beat --loglevel=info --schedule=/app/celerybeat-data/celerybeat-schedule
+    volumes:
+      # HOT RELOAD: Mount source code for instant changes
+      - ../../Viralogic/micro-services/rss-service:/app
+      - ../../docker_volumes_nobackup/rss-service/celery-beat:/app/celerybeat-data
+      - ../../docker_volumes_nobackup/rss-service/logs:/logs
+    depends_on:
+      - rss-postgres
+      - rss-redis
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-celery-beat-staging,logging_stream=stdout"
+
+  # RSS Service Flower (Celery Monitoring) - STAGING
+  rss-flower:
+    image: mher/flower:2.0.1
+    container_name: rss-flower-staging
+    env_file:
+      - .env
+    ports:
+      - "1727:1727"
+    command: celery flower --port=1727
+    volumes:
+      - ../../docker_volumes_nobackup/rss-service/flower:/data
+    depends_on:
+      - rss-redis
+      - rss-celery-worker
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-flower-staging,logging_stream=stdout"
+
+  # RSS Service Adminer - Database Management Interface - STAGING
+  rss-adminer:
+    image: adminer:4.8.1
+    container_name: rss-adminer-staging
+    ports:
+      - "1801:1801"
+    environment:
+      ADMINER_DEFAULT_SERVER: rss-postgres:1725
+      ADMINER_DESIGN: pepa-linha-dark
+    command: php -S 0.0.0.0:1801
+    depends_on:
+      - rss-postgres
+    networks:
+      - rss-service-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "logging_jobname=rss-adminer-staging,logging_stream=stdout"
 
   # Cloudflare Tunnel for RSS Service
   cloudflared:

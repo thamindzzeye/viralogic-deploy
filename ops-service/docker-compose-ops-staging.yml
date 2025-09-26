@@ -119,7 +119,7 @@ services:
   # Ops Service - STAGING with hot reload
   ops-service:
     build:
-      context: ../Viralogic/micro-services/ops-service
+      context: ../../Viralogic/micro-services/ops-service
       dockerfile: Dockerfile.dev
     container_name: ops-service-staging
     ports:
@@ -141,7 +141,7 @@ services:
       - REDIS_DB=0
     volumes:
       # HOT RELOAD: Mount source code for instant changes
-      - ../Viralogic/micro-services/ops-service:/app
+      - ../../Viralogic/micro-services/ops-service:/app
       - ../../docker_volumes/ops-service/logs:/app/logs
     depends_on:
       - ops_db
